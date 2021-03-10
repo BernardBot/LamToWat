@@ -36,7 +36,7 @@ data Val
   = INT Int
   | VAR String
   | LABEL String
-  deriving Eq
+  deriving (Eq,Show)
 
 val2strl :: Val -> [String]
 val2strl (VAR x) = [x]
@@ -84,7 +84,7 @@ instance a :<: a where
   inj = id
   prj = Just
 
-instance a :<: a :+: b where
+instance {-# OVERLAPS #-} a :<: a :+: b where
   inj = L
   prj (L a) = Just a
   prj _ = Nothing

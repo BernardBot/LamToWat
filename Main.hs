@@ -34,3 +34,5 @@ bar str = do
   print $ doms
   print $ all (==(show lamdom)) doms
   
+baz = tree2wat . hFun 0 . hRecord . hClosure [] . hBlock [] . lam2tree . str2lam
+baz' = putStrLn . Wat.pprint . baz

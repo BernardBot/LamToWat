@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Lam2Tree where
@@ -5,6 +6,7 @@ module Lam2Tree where
 import Lam hiding (INT)
 import Tree
 
+lam2tree :: Lam -> Tree (Block :+: Fun :+: Base) Val
 lam2tree (Var x) = return (VAR x)
 lam2tree (Int i) = return (INT i)
 lam2tree (Lam x e) = do

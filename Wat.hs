@@ -73,12 +73,16 @@ w2d (Module fs e) = go e
           ds <- mapM vo vs
           (funs !! p) ds
         go (Done v) = vo v
+        go (Set x v e) = do
+          d <- vo v
+          local ((x,d):) (go e)
 
         vo :: Val -> M Dom
         vo (VAR x) = do
           nv <- ask
-          Just v <- return (lookup x nv)
-          return v
+          case lookup x nv of
+            Just v -> return v
+            Nothing -> error $ show x ++ " " ++ show nv
         vo (INT i) = return i
 
 --------------
@@ -97,6 +101,7 @@ pprinte (Done v) = "return " ++ pprintv v
 pprinte (Malloc i x e) = localset x ("malloc " ++ show i) ++ pprinte e
 pprinte (Store i s t e) = "store " ++ show i ++ " " ++ pprintv s ++ " " ++ pprintv t ++ "\n" ++ pprinte e
 pprinte (Load i v x e) = localset x ("load " ++ show i ++ " " ++ pprintv v) ++ pprinte e
+pprinte (Set x v e) = localset x (pprintv v) ++ pprinte e
 
 pprint (Module fs e) = "module\n" ++ concatMap pprintF fs ++ "" ++ pprinte e
   where pprintF (f,as,b) = "func " ++ f ++ concatMap (\ a -> " (param " ++ a ++ ")") as ++ "\n" ++ indent (pprinte b)
