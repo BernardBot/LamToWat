@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE GADTs #-}
 
@@ -6,12 +5,7 @@ module Tree2Tree where
 
 import Tree
 
-import Data.List
 import Control.Monad
-
--- add this
-hOther f (Leaf v) = Leaf v
-hOther f (Node (R cmd) ks k) = Node cmd (fmap (\ k -> f k) ks) (fmap (\ k x -> f (k x)) k)
 
 hBlock :: [(String,Val)] -> Tree (Block :+: Fresh :+: Fun :+: Base) Val -> Tree (Fresh :+: Fun :+: Base) Val
 hBlock nv (BLOCK b k) = do
@@ -37,7 +31,7 @@ hFresh i (FRESHVAR x k) =
 hFresh i (Leaf v) = Leaf v
 hFresh i (Node (R cmd) ks k) = do
   Node cmd
-    (fmap (\ k -> hFresh (i+i*100) k) ks)
+    (fmap (\ k -> hFresh (i+i*100) k) ks) -- hack
     (fmap (\ k x -> hFresh i (k x)) k)
 
 _nv = VAR "_nv"
@@ -85,8 +79,8 @@ hFun :: Tree (Malloc :+: Fun :+: Base) Val -> ([(Val,[Val],Tree')], Tree')
 hFun (Leaf v) = ([],Leaf v)
 hFun (APP v vs) = ([],app v vs)
 hFun (ADD v1 v2 x k) = case hFun (k x) of (fs,k') -> (fs, add v1 v2 x >> k')
-hFun (MALLOC i x k) = case hFun (k x) of (fs,k') -> (fs, malloc i x >> k')
-hFun (LOAD i v x k) = case hFun (k x) of (fs,k') -> (fs, load i v x >> k')
+hFun (MALLOC i x k)  = case hFun (k x) of (fs,k') -> (fs, malloc i x >> k')
+hFun (LOAD i v x k)  = case hFun (k x) of (fs,k') -> (fs, load i v x >> k')
 hFun (STORE i s t k) = case hFun (k UNIT) of (fs,k') -> (fs, store i s t >> k')
-hFun (FUN f as b k) = case hFun b of (fs,b') -> case hFun (k f) of (fs',k') -> ((f,as,b'):fs'++fs,k')
+hFun (FUN f as b k)  = case hFun b of (fs,b') -> case hFun (k f) of (fs',k') -> ((f,as,b'):fs'++fs,k')
 

@@ -77,7 +77,7 @@ instance Show Val where
 
 tab = "  "
 indent = unlines . map (tab++) . lines
-assign x y = x ++ " <- " ++ y ++ "\n"
+assign x y = x ++ " = " ++ y ++ "\n"
 args ss = "(" ++ intercalate "," ss ++ ")"
 
 instance Show Cps where
@@ -88,18 +88,3 @@ instance Show Cps where
   show (DONE v)         = show v
   show (FIX fs e)       = concatMap showF fs                     ++ show e
     where showF (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (show b)
-
-pprintv (VAR x) = x
-pprintv (LABEL x) = x
-pprintv (INT i) = show i
-
-letin x y = "let " ++ x ++ " = " ++ y ++ " in\n"
-
-pprint (ADD v1 v2 x e) = letin x (pprintv v1 ++ " + " ++ pprintv v2) ++ pprint e
-pprint (RECORD vs x e) =
-  letin x (if null vs then "[]" else "[" ++ tail (concatMap ((',':) . pprintv) vs) ++ "]") ++ pprint e
-pprint (SELECT n v x e) = letin x (pprintv v ++ " !! " ++ show n) ++ pprint e
-pprint (APP v vs) = pprintv v ++ concatMap ((' ':) . pprintv) vs
-pprint (DONE v) = pprintv v
-pprint (FIX fs e) = "let\n" ++ concatMap pprintF fs ++ "in\n" ++ pprint e
-  where pprintF (f,as,b) = f ++ concatMap (' ':) as ++ " =\n" ++ indent (pprint b)

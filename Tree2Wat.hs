@@ -9,13 +9,14 @@ import Wat
 import Data.List
 import Data.Maybe
 
-tree2wat (fs,e) = Module fs' (go e)--error $ show (filter (\ l -> length (filter (==l) ls) > 1) ls)
+type Tree' = Tree (Malloc :+: Base) Tree.Val
+
+tree2wat :: ([(Tree.Val, [Tree.Val], Tree')], Tree') -> Wat
+tree2wat (fs,e) = Module fs' (go e)
   where ns :: [String]
         ns = map (\ (LABEL f,as,b) -> f) fs
 
         unVar (Tree.VAR x) = x
-
-        ls = map (\ (f,as,b) -> f) fs
 
         fs' :: [(String,[String],Exp)]
         fs' = map (\ (LABEL f,as,b) -> (f,map unVar as,go b)) fs

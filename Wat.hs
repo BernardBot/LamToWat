@@ -5,22 +5,19 @@ import Control.Monad.State
 
 import Data.Maybe
 
-data Wat = Module [(String,[String],Exp)] Exp deriving Show
-
 data Val
   = INT Int
   | VAR String
-  deriving Show
+
+data Wat = Module [(String,[String],Exp)] Exp
 
 data Exp
   = Malloc Int String Exp
   | Store Int Val Val Exp
   | Load Int Val String Exp
-  | Set String Val Exp
   | Add Val Val String Exp
   | App Val [Val]
   | Done Val
-  deriving Show
 
 type Dom = Int
 type Fun = [Dom] -> M Dom
@@ -45,7 +42,7 @@ wat2dom =
 w2d :: Wat -> M Dom
 w2d (Module fs e) = go e
   where funs :: [Fun]
-        funs = map (\ (f,as,b) vs -> if length vs /= length as then error $ show (length funs) ++ "  " ++ show (map (\(f,as,b) -> f) fs) ++ " " ++ show f ++ " " ++ show vs ++ " " ++ show as ++ "\n" ++ pprinte b else local (const $ zip as vs) $ go b) fs
+        funs = map (\ (f,as,b) vs -> local (const $ zip as vs) $ go b) fs
 
         go :: Exp -> M Dom
         go (Malloc i x e) = do
@@ -56,7 +53,6 @@ w2d (Module fs e) = go e
           i <- vo s
           d <- vo t
           (p,hp) <- get
-          -- here you can check if we are storing in (non-)-allocated memory
           let (a,_:b) = splitAt (i+j) hp
           put (p,a ++ d : b)
           go e
@@ -68,60 +64,38 @@ w2d (Module fs e) = go e
           i1 <- vo v1
           i2 <- vo v2
           local ((x,i1 + i2):) (go e)
-        go w@(App v vs) = do
+        go (App v vs) = do
           p <- vo v
           ds <- mapM vo vs
           (funs !! p) ds
-          -- case fs !! p of
-          --   (_,as,_) | length ds /= length as -> error $ pprinte w
-          --   _ -> (funs !! p) ds
         go (Done v) = vo v
-        go (Set x v e) = do
-          d <- vo v
-          local ((x,d):) (go e)
 
         vo :: Val -> M Dom
         vo (VAR x) = do
           nv <- ask
-          case lookup x nv of
-            Just v -> return v
-            Nothing -> error $ show x ++ " " ++ show nv
+          Just v <- return (lookup x nv)
+          return v
         vo (INT i) = return i
 
 --------------
 -- Printing --
 --------------
 
-pprintv (VAR x) = x
-pprintv (INT i) = show i
+instance Show Val where
+  show (VAR x) = x
+  show (INT i) = show i
 
 indent = unlines . map ("  "++) . lines
-localset x y = "localset " ++ x ++ " (" ++ y ++ ")\n"
+assign x y = x ++ " = " ++ y ++ "\n"
 
-pprinte (Add v1 v2 x e) = localset x (pprintv v1 ++ " + " ++ pprintv v2) ++ pprinte e
-pprinte (App v vs) = "call " ++ pprintv v ++ concatMap ((' ':) . pprintv) vs
-pprinte (Done v) = "return " ++ pprintv v
-pprinte (Malloc i x e) = localset x ("malloc " ++ show i) ++ pprinte e
-pprinte (Store i s t e) = "store " ++ show i ++ " " ++ pprintv s ++ " " ++ pprintv t ++ "\n" ++ pprinte e
-pprinte (Load i v x e) = localset x ("load " ++ show i ++ " " ++ pprintv v) ++ pprinte e
-pprinte (Set x v e) = localset x (pprintv v) ++ pprinte e
+instance Show Wat where
+  show (Module fs e) = "module\n" ++ concatMap showF fs ++ "" ++ show e
+    where showF (f,as,b) = "func " ++ f ++ concatMap (\ a -> " (param " ++ a ++ ")") as ++ "\n" ++ indent (show b)
 
-pprint (Module fs e) = "module\n" ++ concatMap pprintF fs ++ "" ++ pprinte e
-  where pprintF (f,as,b) = "func " ++ f ++ concatMap (\ a -> " (param " ++ a ++ ")") as ++ "\n" ++ indent (pprinte b)
-
--------------
--- Testing --
--------------
-
-e = Module [
-  ("f", ["a","b"], Add (VAR "a") (VAR "b") "x" (App (INT 1) [VAR "x"])),
-  ("g", ["x"], Done (VAR "x"))
-  ]
-  ( Store 0 (INT 10) (INT 42)
-  $ Load 1 (INT 10) "x"
-  $ Done (VAR "x"))
-
-
-e2 = Module 
-  [("f",["x"],Add (VAR "x") (INT 1) "r" (Done (VAR "r")))]
-  (App (INT 0) [INT 41])
+instance Show Exp where
+  show (Done v) = "return " ++ show v
+  show (App v vs) = "call " ++ show v ++ concatMap ((' ':) . show) vs
+  show (Add v1 v2 x e) = assign x (show v1 ++ " + " ++ show v2) ++ show e
+  show (Malloc i x e)  = assign x ("malloc " ++ show i) ++ show e
+  show (Load i v x e)  = assign x ("load " ++ show i ++ " " ++ show v) ++ show e
+  show (Store i s t e) = "store " ++ show i ++ " " ++ show s ++ " " ++ show t ++ "\n" ++ show e

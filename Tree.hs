@@ -138,7 +138,7 @@ pattern STORE i s t k <- (project -> Just (STORE' i s t, [], Just k))
 
 tab = "  "
 indent = unlines . map (tab++) . lines
-assign x y = x ++ " <- " ++ y ++ "\n"
+assign x y = x ++ " = " ++ y ++ "\n"
 args ss = "(" ++ intercalate "," ss ++ ")"
 
 instance Show Val where
