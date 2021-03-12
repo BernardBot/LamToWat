@@ -13,6 +13,8 @@ import Lam2Tree
 import Tree2Tree
 import Tree2Wat
 
+import Tree2Cps
+
 main :: IO ()
 main = putStrLn "Hello, Haskell!"
 
@@ -34,5 +36,6 @@ bar str = do
   print $ doms
   print $ all (==(show lamdom)) doms
   
-baz = tree2wat . hFun 0 . hRecord . hClosure [] . hBlock [] . lam2tree . str2lam
-baz' = putStrLn . Wat.pprint . baz
+baz = tree2wat . hFun . hRecord . hClosure [] . hFresh 0 . hBlock [] . lam2tree . str2lam
+bob = hClosure [] . hFresh 0 . hBlock [] . lam2tree . str2lam
+bamie = hFresh 0 . hBlock [] . lam2tree . str2lam

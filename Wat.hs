@@ -45,7 +45,7 @@ wat2dom =
 w2d :: Wat -> M Dom
 w2d (Module fs e) = go e
   where funs :: [Fun]
-        funs = map (\ (f,as,b) vs -> local (const $ zip as vs) $ go b) fs
+        funs = map (\ (f,as,b) vs -> if length vs /= length as then error $ show (length funs) ++ "  " ++ show (map (\(f,as,b) -> f) fs) ++ " " ++ show f ++ " " ++ show vs ++ " " ++ show as ++ "\n" ++ pprinte b else local (const $ zip as vs) $ go b) fs
 
         go :: Exp -> M Dom
         go (Malloc i x e) = do
@@ -68,10 +68,13 @@ w2d (Module fs e) = go e
           i1 <- vo v1
           i2 <- vo v2
           local ((x,i1 + i2):) (go e)
-        go (App v vs) = do
+        go w@(App v vs) = do
           p <- vo v
           ds <- mapM vo vs
           (funs !! p) ds
+          -- case fs !! p of
+          --   (_,as,_) | length ds /= length as -> error $ pprinte w
+          --   _ -> (funs !! p) ds
         go (Done v) = vo v
         go (Set x v e) = do
           d <- vo v

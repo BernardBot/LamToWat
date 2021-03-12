@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE GADTs #-}
 
@@ -8,78 +9,84 @@ import Tree
 import Data.List
 import Control.Monad
 
-hBlock :: [(String,Val)] -> Tree (Block :+: Fun :+: Base) Val -> Tree (Fun :+: Base) Val
+-- add this
+hOther f (Leaf v) = Leaf v
+hOther f (Node (R cmd) ks k) = Node cmd (fmap (\ k -> f k) ks) (fmap (\ k x -> f (k x)) k)
+
+hBlock :: [(String,Val)] -> Tree (Block :+: Fresh :+: Fun :+: Base) Val -> Tree (Fresh :+: Fun :+: Base) Val
 hBlock nv (BLOCK b k) = do
-  r <- fun 1 (\ [r,x] -> hBlock nv (k x))
-  v <- hBlock (("_nxt",r):nv) (b [])
+  r <- freshlabel "r"
+  x <- freshvar "x"
+  fun r [x] (hBlock nv (k x))
+  v <- hBlock (("_nxt",r):nv) b
   app r [v]
 hBlock nv (GETK x k) | Just v <- lookup x nv = hBlock nv (k v)
-hBlock nv (SETK x v k) = hBlock ((x,v):nv) (k v)
+hBlock nv (SETK x v k) = hBlock ((x,v):nv) (k UNIT)
 hBlock nv (Leaf v) = Leaf v
 hBlock nv (Node (R cmd) ks k) =
   Node cmd
-    (fmap (\ k x -> hBlock nv (k x)) ks)
+    (fmap (\ k -> hBlock nv k) ks)
     (fmap (\ k x -> hBlock nv (k x)) k)
 
+-- how to get real fresh variables?
+hFresh :: Int -> Tree (Fresh :+: sig) Val -> Tree sig Val
+hFresh i (FRESHLABEL x k) =
+  hFresh (i+1) (k (LABEL ("_" ++ x ++ show i)))
+hFresh i (FRESHVAR x k) =
+  hFresh (i+1) (k (VAR   ("_" ++ x ++ show i)))
+hFresh i (Leaf v) = Leaf v
+hFresh i (Node (R cmd) ks k) = do
+  Node cmd
+    (fmap (\ k -> hFresh (i+i*100) k) ks)
+    (fmap (\ k x -> hFresh i (k x)) k)
+
+_nv = VAR "_nv"
+_p = ('_' :)
+
 hClosure :: [Val] -> Tree (Fun :+: Base) Val -> Tree (Record :+: Fun :+: Base) Val
-hClosure nv (FUN i b k) = do
-  f <- fun (i+1) (\ (f:c:as) -> do
-                _c <- select 1 c
-                zipWithM_
-                  (\ i x -> do _x <- select i _c; set x _x) [0..]
-                  (concatMap val2strl (nub nv \\ as))
-                hClosure (nub (as++nv)) (b (f:as)))
+hClosure nv (Leaf v) = Leaf v
+hClosure nv (FUN f as b k) = do
+  fun f (_nv:as)
+    (do select 1 _nv _nv
+        zipWithM_ (\ i v -> if v `elem` as then return v else select i _nv v) [0..] nv
+        hClosure (nv++as) b)
   hClosure nv (k f)
 hClosure nv (APP v vs) = do
-  c <- record nv
-  vs' <- mapM (\ v -> case v of LABEL f -> record [v,c]; _ -> return v) vs
+  record nv _nv
+  vs' <- mapM (\ v -> case v of LABEL f -> record [v,_nv] (VAR (_p f)); _ -> return v) vs
   case v of
     VAR f -> do
-      fp <- select 0 v
+      fp <- select 0 v (VAR (_p f))
       app fp (v:vs')
     LABEL f -> do
-      fc <- record [v,c]
+      fc <- record [v,_nv] (VAR (_p f))
       app v (fc:vs')
-hClosure nv (SET x v k) = do set x v; hClosure nv (k undefined)
-hClosure nv (Leaf v) = Leaf v
-hClosure nv (Node cmd ks k) =
-  Node (R cmd)
-    (fmap (\ k x -> hClosure nv (k x)) ks)
-    (fmap (\ k x -> hClosure (x:nv) (k x)) k)
+hClosure nv (ADD v1 v2 x k) = do
+  add v1 v2 x
+  hClosure (nv++[x]) (k x)
 
 hRecord :: Tree (Record :+: sig) Val -> Tree (Malloc :+: sig) Val
-hRecord (RECORD vs k) = do
-  x <- malloc (length vs)
+hRecord (RECORD vs x k) = do
+  malloc (length vs) x
   zipWithM_ (\ i v -> store i x v) [0..] vs
   hRecord (k x)
-hRecord (SELECT i v k) = do
-  x <- load i v
+hRecord (SELECT i v x k) = do
+  load i v x
   hRecord (k x)
 hRecord (Leaf v) = Leaf v
 hRecord (Node (R cmd) ks k) =
   Node (R cmd)
-    (fmap (\ k x -> hRecord (k x)) ks)
+    (fmap (\ k -> hRecord k) ks)
     (fmap (\ k x -> hRecord (k x)) k)
 
-type T = Tree (Malloc :+: Base) Val
+type Tree' = Tree (Malloc :+: Base) Val
 
-hFun :: Int -> Tree (Malloc :+: Fun :+: Base) Val -> ([(String,[String],T)], T)
-hFun i (Leaf v) = ([],Leaf v)
-hFun i (APP v vs)  = ([],app v vs)
+hFun :: Tree (Malloc :+: Fun :+: Base) Val -> ([(Val,[Val],Tree')], Tree')
+hFun (Leaf v) = ([],Leaf v)
+hFun (APP v vs) = ([],app v vs)
+hFun (ADD v1 v2 x k) = case hFun (k x) of (fs,k') -> (fs, add v1 v2 x >> k')
+hFun (MALLOC i x k) = case hFun (k x) of (fs,k') -> (fs, malloc i x >> k')
+hFun (LOAD i v x k) = case hFun (k x) of (fs,k') -> (fs, load i v x >> k')
+hFun (STORE i s t k) = case hFun (k UNIT) of (fs,k') -> (fs, store i s t >> k')
+hFun (FUN f as b k) = case hFun b of (fs,b') -> case hFun (k f) of (fs',k') -> ((f,as,b'):fs'++fs,k')
 
-hFun i (ADD v1 v2 k)   = let x = "_x" ++ show i; i' = i + 1 in case hFun i' (k (VAR x)) of (fs,k) -> (fs, reify (add v1 v2) x k)
-hFun i (MALLOC j k)    = let x = "_x" ++ show i; i' = i + 1 in case hFun i' (k (VAR x)) of (fs,k) -> (fs, reify (malloc j) x k)
-hFun i (LOAD j v k)    = let x = "_x" ++ show i; i' = i + 1 in case hFun i' (k (VAR x)) of (fs,k) -> (fs, reify (load j v) x k)
-
-hFun i (SET x v k)     = case hFun i (k undefined) of (fs,k) -> (fs, do set x v; k)
-hFun i (STORE j s t k) = case hFun i (k undefined) of (fs,k) -> (fs, do store j s t; k)
-
-hFun i (FUN j b k)     = let (as,[f]) = splitAt j (map (("_x"++) . show) [i..i+j]); i' = i + j + 1 in
-  case hFun i' (k (LABEL f))              of { (fs,k) ->
-  case hFun i' (b (LABEL f : map VAR as)) of { (fs',b') ->
-  ((f,as,b'):fs'++fs,k)}}
-                                   
-reify node x k = do
-  x' <- node
-  set x x'
-  k

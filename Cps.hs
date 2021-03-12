@@ -1,13 +1,14 @@
 module Cps where
   
 import Data.Maybe
+import Data.List
 import Control.Monad.Reader
 
 data Val
   = INT Int
   | VAR String
   | LABEL String
-  deriving Show
+--  deriving Show
   
 type Fun = (String, [String], Cps)
 data Cps
@@ -17,7 +18,7 @@ data Cps
   | SELECT Int Val String Cps
   | ADD Val Val String Cps
   | FIX [Fun] Cps
-  deriving Show
+--  deriving Show
 
 -----------------
 -- Interpreter --
@@ -69,11 +70,29 @@ v2d (LABEL x) = ReaderT (lookup x)
 -- Pretty Printing --
 ---------------------
 
+instance Show Val where
+  show (VAR x) = x
+  show (LABEL x) = "_" ++ x
+  show (INT i) = show i
+
+tab = "  "
+indent = unlines . map (tab++) . lines
+assign x y = x ++ " <- " ++ y ++ "\n"
+args ss = "(" ++ intercalate "," ss ++ ")"
+
+instance Show Cps where
+  show (ADD v1 v2 x e)  = assign x (show v1 ++ " + " ++ show v2) ++ show e
+  show (RECORD vs x e)  = assign x (show vs                    ) ++ show e
+  show (SELECT n v x e) = assign x (show v ++ " !! " ++ show n ) ++ show e
+  show (APP v vs)       = show v ++ args (map show vs)
+  show (DONE v)         = show v
+  show (FIX fs e)       = concatMap showF fs                     ++ show e
+    where showF (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (show b)
+
 pprintv (VAR x) = x
 pprintv (LABEL x) = x
 pprintv (INT i) = show i
 
-indent = unlines . map ("  "++) . lines
 letin x y = "let " ++ x ++ " = " ++ y ++ " in\n"
 
 pprint (ADD v1 v2 x e) = letin x (pprintv v1 ++ " + " ++ pprintv v2) ++ pprint e
