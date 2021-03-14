@@ -1,0 +1,20 @@
+let tru = \ x y -> x in
+let fls = \ x y -> y in
+
+let lbl = \ k c -> k c c in
+let cjmp = \ b a c d -> b (c a) (d a) in
+
+let id = \ x -> x in
+
+let unit = \ a c -> c a in
+let bind = \ m f c -> m (\ a -> f a c) in
+
+let callcc = \ h c -> h (\ a d -> c a) c in
+
+let shift = \ f c -> f c (\ a -> a) in
+let reset = \ k c -> c (k (\ a -> a)) in
+
+let e0 = callcc (\ l -> bind (l 10) (\ u -> unit 20)) id in
+let e1 = lbl (\ l -> bind (cjmp tru 1 l) (\ a -> unit (a + 1))) id in
+
+e0

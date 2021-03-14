@@ -28,7 +28,7 @@ tree2wat (fs,e) = Module fs' (go e)
         
         go (MALLOC i v@(Tree.VAR x) k) = Malloc i x (go (k v))
         go (LOAD i v w@(Tree.VAR x) k) = Load i (vo v) x (go (k w))
-        go (STORE i s t k) = Store i (vo s) (vo t) (go (k UNIT))
+        go (STORE i s t k) = Store i (vo s) (vo t) (go (k (Tree.INT 0)))
         
         vo :: Tree.Val -> Wat.Val
         vo (Tree.INT i) = Wat.INT i

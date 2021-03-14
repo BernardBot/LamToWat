@@ -1,0 +1,21 @@
+let fix = \ f -> (\ x -> f (\ y -> x x y)) (\ x -> f (\ y -> x x y)) in
+
+let tru = \ x y -> x in
+let fls = \ x y -> y in
+
+let one = \ s z -> s z in
+
+let pred = \ n f x -> n (\ g h -> h (g f)) (\ u -> x) (\ u -> u) in
+
+let mul = \ m n s -> m (n s) in
+
+let iszero = \ n -> n (\ x -> fls) tru in
+
+let fact = fix (\ f n -> (iszero n) one (mul n (\ x -> f (pred n) x))) in
+
+let s = \ n -> n + 1 in
+let z = 0 in
+
+let n = \ s z -> s (s z) in
+
+fact n s z

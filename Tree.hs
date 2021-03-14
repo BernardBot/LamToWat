@@ -37,7 +37,6 @@ data Val
   = INT Int
   | VAR String
   | LABEL String
-  | UNIT
   deriving Eq
 
 --------------
@@ -134,7 +133,9 @@ pattern LOAD i v x k <- (project -> Just (LOAD' i v x, [], Just k))
 store i s t = liftT (inj (STORE' i s t)) []
 pattern STORE i s t k <- (project -> Just (STORE' i s t, [], Just k))
 
+-----------
 -- Print --
+-----------
 
 tab = "  "
 indent = unlines . map (tab++) . lines

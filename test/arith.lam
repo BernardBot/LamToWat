@@ -1,0 +1,28 @@
+let tru = \ x y -> x in
+let fls = \ x y -> y in
+let fix = \ f -> (\ x -> f (\ y -> x x y)) (\ x -> f (\ y -> x x y)) in
+let iszero = \ n -> n (\ x -> fls) tru in
+
+let zero  = \ s z -> z in
+let one   = \ s z -> s z in
+let two   = \ s z -> s (s z) in
+let three = \ s z -> s (s (s z)) in
+let four  = \ s z -> s (s (s (s z))) in
+let five  = \ s z -> s (s (s (s (s z)))) in
+let six   = \ s z -> s (s (s (s (s (s z))))) in
+let seven = \ s z -> s (s (s (s (s (s (s z)))))) in
+let eight = \ s z -> s (s (s (s (s (s (s (s z))))))) in
+let nine  = \ s z -> s (s (s (s (s (s (s (s (s z)))))))) in
+let ten   = \ s z -> s (s (s (s (s (s (s (s (s (s z))))))))) in
+
+let suc = \ n s z -> s (n s z) in
+let add = \ m n -> n suc m in
+let mul = \ m n s -> m (n s) in
+let exp = \ m n -> n m in
+let prd = \ n s z -> n (\ g h -> h (g s)) (\ u -> z) (\ u -> u) in
+let sub = \ m n -> n prd m in
+let div1 = fix (\ divide n m -> let d = sub n m in iszero d zero (suc (\ x -> divide d m x))) in
+let div = \ n -> div1 (suc n) in
+let num = \ f -> f (\ x -> x + 1) 0 in
+
+num (mul three three)

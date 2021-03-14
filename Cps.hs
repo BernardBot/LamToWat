@@ -8,7 +8,6 @@ data Val
   = INT Int
   | VAR String
   | LABEL String
---  deriving Show
   
 type Fun = (String, [String], Cps)
 data Cps
@@ -18,7 +17,6 @@ data Cps
   | SELECT Int Val String Cps
   | ADD Val Val String Cps
   | FIX [Fun] Cps
---  deriving Show
 
 -----------------
 -- Interpreter --

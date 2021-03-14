@@ -42,7 +42,7 @@ wat2dom =
 w2d :: Wat -> M Dom
 w2d (Module fs e) = go e
   where funs :: [Fun]
-        funs = map (\ (f,as,b) vs -> local (const $ zip as vs) $ go b) fs
+        funs = map (\ (f,as,b) vs -> local (const (zip as vs)) (go b)) fs
 
         go :: Exp -> M Dom
         go (Malloc i x e) = do
@@ -77,9 +77,9 @@ w2d (Module fs e) = go e
           return v
         vo (INT i) = return i
 
---------------
--- Printing --
---------------
+---------------------
+-- Pretty Printing --
+---------------------
 
 instance Show Val where
   show (VAR x) = x
@@ -96,6 +96,7 @@ instance Show Exp where
   show (Done v) = "return " ++ show v
   show (App v vs) = "call " ++ show v ++ concatMap ((' ':) . show) vs
   show (Add v1 v2 x e) = assign x (show v1 ++ " + " ++ show v2) ++ show e
-  show (Malloc i x e)  = assign x ("malloc " ++ show i) ++ show e
-  show (Load i v x e)  = assign x ("load " ++ show i ++ " " ++ show v) ++ show e
+  show (Malloc i x e) = assign x ("malloc " ++ show i) ++ show e
+  show (Load i v x e) = assign x ("load " ++ show i ++ " " ++ show v) ++ show e
   show (Store i s t e) = "store " ++ show i ++ " " ++ show s ++ " " ++ show t ++ "\n" ++ show e
+

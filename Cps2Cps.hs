@@ -6,7 +6,6 @@ import Control.Monad.Writer
 import Control.Monad.Reader
 
 import Data.Tuple
-import Data.List
 
 cps2cps :: Cps -> Cps
 cps2cps =

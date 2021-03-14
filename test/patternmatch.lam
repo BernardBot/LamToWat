@@ -1,0 +1,5 @@
+let var = \ x i -> x in
+let app = \ m n i -> i (m i) (n i) in
+let lam = \ f i x -> f x i in
+let e = \ q -> q (\ x -> x) in
+e (app (lam (\ x -> var x)) (var 42))
