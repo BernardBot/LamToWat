@@ -1,5 +1,7 @@
 module Test where
 
+import System.Directory
+
 import Lam
 import Wat
 
@@ -13,6 +15,20 @@ import Lam2Tree
 import Tree2Tree
 import Tree2Wat
 
+testDir :: FilePath
+testDir = "./test/"
+
+runTest :: IO ()
+runTest = do
+  tests <- listDirectory testDir
+  mapM_ (\ f -> do
+            putStrLn ""
+            putStrLn f
+            file <- readFile $ testDir ++ f
+            testAll file)
+    tests
+
+testAll :: String -> IO ()
 testAll str = do
   let lam = str2lam str
   let cps = lam2cps $ str2lam $ str
@@ -35,9 +51,3 @@ testAll str = do
 
   putStrLn $ "TESTS " ++ if all (==lamdom) doms then "PASSED" else "FAILED"
 
-runTest = mapM_ (\ f -> do
-                    putStrLn ""
-                    putStrLn f
-                    file <- readFile ("test/" ++ f ++ ".lam")
-                    testAll file)
-          ["control", "patternmatch", "recursion", "arith"]
