@@ -73,8 +73,9 @@ w2d (Module fs e) = go e
         vo :: Val -> M Dom
         vo (VAR x) = do
           nv <- ask
-          Just v <- return (lookup x nv)
-          return v
+          case lookup x nv of
+            Just v -> return v
+            Nothing -> error $ x ++ " " ++ show nv ++ " " ++ show (map (\ (f,_,_) -> f) fs)
         vo (INT i) = return i
 
 ---------------------

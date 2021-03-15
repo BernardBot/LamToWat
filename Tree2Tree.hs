@@ -22,11 +22,11 @@ hBlock' :: ( Fresh :<: sig
           [(String, Val)]
        -> Tree (Block :+: sig) Val -> Tree sig Val
 hBlock' nv (BLOCK b k) = do
-  r <- freshlabel "r"
-  x <- freshvar "x"
-  fun r [x] (hBlock' nv (k x))
-  v <- hBlock' (("_nxt",r):nv) b
-  app r [v]
+  VAR r <- fresh "r"
+  VAR x <- fresh "x"
+  fun r [x] (hBlock' nv (k (VAR x)))
+  v <- hBlock' (("_nxt",LABEL r):nv) b
+  app (VAR r) [v]
 hBlock' nv (GETK x k) | Just v <- lookup x nv = hBlock' nv (k v)
 hBlock' nv (SETK x v k) = hBlock' ((x,v):nv) (k (INT 0))
 hBlock' nv (Leaf v) = Leaf v
@@ -39,17 +39,15 @@ hFresh :: Tree (Fresh :+: sig) Val -> Tree sig Val
 hFresh = hFresh' 0 []
 
 hFresh' :: Int -> [Int] -> Tree (Fresh :+: sig) Val -> Tree sig Val
-hFresh' i s (FRESHLABEL x k) =
-  hFresh' (i+1) s (k (LABEL ("_" ++ x ++ intercalate "_" (map show s) ++ "__" ++ show i)))
-hFresh' i s (FRESHVAR x k) =
-  hFresh' (i+1) s (k (VAR   ("_" ++ x ++ intercalate "_" (map show s) ++ "__" ++ show i)))
+hFresh' i s (FRESH x k) =
+  hFresh' (i+1) s (k (VAR ("_" ++ x ++ intercalate "_" (map show s) ++ "__" ++ show i)))
 hFresh' i s (Leaf v) = Leaf v
 hFresh' i s (Node (R cmd) ks k) = do
   Node cmd
     (zipWith (\ k j -> hFresh' i (s ++ [j]) k) ks [1..]) -- hack?
     (fmap (\ k x -> hFresh' i (s ++ [0])  (k x)) k)
 
-_nv = VAR "_nv"
+_nv = "_nv"
 _p = ('_' :)
 
 hClosure :: ( Fun :<: sig
@@ -59,42 +57,42 @@ hClosure = hClosure' []
 
 hClosure' :: ( Fun :<: sig
             , Base :<: sig) =>
-            [Val] -> Tree sig Val -> Tree (Record :+: sig) Val
+            [String] -> Tree sig Val -> Tree (Record :+: sig) Val
 hClosure' nv (FUN f as b k) = do
   fun f (_nv:as)
-    (do select 1 _nv _nv
-        zipWithM_ (\ i v ->
-                     if v `elem` as
-                     then return v
-                     else select i _nv v) [0..] nv
-        hClosure' (nv++as) b)
-  hClosure' nv (k f)
+    (do select 1 (VAR _nv) _nv
+        zipWithM_ (\ i x ->
+                     if x `elem` as
+                     then return (VAR x)
+                     else select i (VAR _nv) x) [0..] nv
+        hClosure' (nv ++ as) b)
+  hClosure' nv (k (LABEL f))
 hClosure' nv (APP v vs) = do
-  record nv _nv
+  record (map VAR nv) _nv
   vs' <- mapM (\ v -> case v of
-                   LABEL f -> record [v,_nv] (VAR (_p f))
+                   LABEL f -> record [v,VAR _nv] (_p f)
                    _       -> return v) vs
   case v of
     VAR f -> do
-      fp <- select 0 v (VAR (_p f))
+      fp <- select 0 v (_p f)
       app fp (v:vs')
     LABEL f -> do
-      fc <- record [v,_nv] (VAR (_p f))
+      fc <- record [v,VAR _nv] (_p f)
       app v (fc:vs')
 hClosure' nv (Leaf v) = Leaf v
 hClosure' nv (Node cmd ks k) =
   Node (R cmd)
     (fmap (\ k -> hClosure' nv k) ks) -- hack
-    (fmap (\ k x -> hClosure' (nv++[x]) (k x)) k)
+    (fmap (\ k v -> hClosure' (nv ++ case v of VAR x -> [x]; _ -> []) (k v)) k)
 
 hRecord :: Tree (Record :+: sig) Val -> Tree (Malloc :+: sig) Val
 hRecord (RECORD vs x k) = do
   malloc (length vs) x
-  zipWithM_ (\ i v -> store i x v) [0..] vs
-  hRecord (k x)
+  zipWithM_ (\ i v -> store i (VAR x) v) [0..] vs
+  hRecord (k (VAR x))
 hRecord (SELECT i v x k) = do
   load i v x
-  hRecord (k x)
+  hRecord (k (VAR x))
 hRecord (Leaf v) = Leaf v
 hRecord (Node (R cmd) ks k) =
   Node (R cmd)
@@ -103,11 +101,11 @@ hRecord (Node (R cmd) ks k) =
 
 type Tree' = Tree (Malloc :+: Base) Val
 
-hFun :: Tree (Malloc :+: Fun :+: Base) Val -> ([(Val,[Val],Tree')], Tree')
+hFun :: Tree (Malloc :+: Fun :+: Base) Val -> ([(String,[String],Tree')], Tree')
 hFun (Leaf v) = ([],Leaf v)
 hFun (APP v vs) = ([],app v vs)
-hFun (ADD v1 v2 x k) = case hFun (k x) of (fs,k') -> (fs, add v1 v2 x >> k')
-hFun (MALLOC i x k)  = case hFun (k x) of (fs,k') -> (fs, malloc i x >> k')
-hFun (LOAD i v x k)  = case hFun (k x) of (fs,k') -> (fs, load i v x >> k')
+hFun (ADD v1 v2 x k) = case hFun (k (VAR x)) of (fs,k') -> (fs, add v1 v2 x >> k')
+hFun (MALLOC i x k)  = case hFun (k (VAR x)) of (fs,k') -> (fs, malloc i x >> k')
+hFun (LOAD i v x k)  = case hFun (k (VAR x)) of (fs,k') -> (fs, load i v x >> k')
 hFun (STORE i s t k) = case hFun (k (INT 0)) of (fs,k') -> (fs, store i s t >> k')
-hFun (FUN f as b k)  = case hFun b of (fs,b') -> case hFun (k f) of (fs',k') -> ((f,as,b'):fs'++fs,k')
+hFun (FUN f as b k)  = case hFun b of (fs,b') -> case hFun (k (LABEL f)) of (fs',k') -> ((f,as,b'):fs'++fs,k')
