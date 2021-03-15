@@ -11,22 +11,24 @@ import Control.Monad
 import Data.List
 
 hBlock :: ( Fresh :<: sig
-          , Fun :<: sig
-          , Base :<: sig) =>
-          Tree (Block :+: sig) Val -> Tree sig Val
+          , Fun   :<: sig
+          , Base  :<: sig ) =>
+          Tree (Block :+: sig) Val ->
+          Tree sig Val
 hBlock = hBlock' []
 
 hBlock' :: ( Fresh :<: sig
-          , Fun :<: sig
-          , Base :<: sig) =>
-          [(String, Val)]
-       -> Tree (Block :+: sig) Val -> Tree sig Val
+           , Fun   :<: sig
+           , Base  :<: sig ) =>
+           [(String, Val)] ->
+           Tree (Block :+: sig) Val ->
+           Tree sig Val
 hBlock' nv (BLOCK b k) = do
   VAR r <- fresh "r"
   VAR x <- fresh "x"
   fun r [x] (hBlock' nv (k (VAR x)))
   v <- hBlock' (("_nxt",LABEL r):nv) b
-  app (VAR r) [v]
+  app (LABEL r) [v]
 hBlock' nv (GETK x k) | Just v <- lookup x nv = hBlock' nv (k v)
 hBlock' nv (SETK x v k) = hBlock' ((x,v):nv) (k (INT 0))
 hBlock' nv (Leaf v) = Leaf v
@@ -52,12 +54,15 @@ _p = ('_' :)
 
 hClosure :: ( Fun :<: sig
             , Base :<: sig) =>
-            Tree sig Val -> Tree (Record :+: sig) Val
+            Tree sig Val ->
+            Tree (Record :+: sig) Val
 hClosure = hClosure' []
 
-hClosure' :: ( Fun :<: sig
-            , Base :<: sig) =>
-            [String] -> Tree sig Val -> Tree (Record :+: sig) Val
+hClosure' :: ( Fun  :<: sig
+             , Base :<: sig ) =>
+             [String] ->
+             Tree sig Val ->
+             Tree (Record :+: sig) Val
 hClosure' nv (FUN f as b k) = do
   fun f (_nv:as)
     (do select 1 (VAR _nv) _nv

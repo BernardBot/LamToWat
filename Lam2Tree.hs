@@ -20,7 +20,7 @@ lam2tree (App e1 e2) = block (do
   k <- getk "_nxt"
   app v1 [v2,k])
 lam2tree (Add e1 e2) = do
+  VAR x <- fresh "x"
   v1 <- lam2tree e1
   v2 <- lam2tree e2
-  VAR x <- fresh "x"
   add v1 v2 x

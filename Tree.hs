@@ -11,7 +11,6 @@ module Tree where
 import Control.Monad
 import Control.Monad.State
 
-import Data.Maybe
 import Data.List
 
 data Tree cmd a where
@@ -52,13 +51,13 @@ data Base
   = APP' Val [Val]
   | ADD' Val Val String
 
-data Fresh = FRESH' String
-
 data Record
   = RECORD' [Val] String
   | SELECT' Int Val String
 
 data Fun = FUN' String [String]
+
+data Fresh = FRESH' String
 
 data Block
   = BLOCK'
@@ -137,6 +136,8 @@ pattern STORE i s t k <- (project -> Just (STORE' i s t, [], Just k))
 ------------------
 -- Pretty Print --
 ------------------
+
+-- how to do printing modularly?
 
 instance Show Val where
   show (VAR x) = x
