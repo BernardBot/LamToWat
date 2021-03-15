@@ -34,7 +34,7 @@ testAll str = do
   let cps = lam2cps $ str2lam $ str
   let cps' = cps2cps $ lam2cps $ str2lam $ str
   let wat = cps2wat $ cps2cps $ lam2cps $ str2lam $ str
-  let tree = tree2wat $ hFun $ hRecord $ hClosure [] $ hFresh 0 [] $ hBlock [] $ lam2tree $ str2lam str
+  let tree = tree2wat $ hFun $ hRecord $ hClosure $ hFresh $ hBlock $ lam2tree $ str2lam str
 
   -- should always have integer results
   let Lam.INT lamdom = lam2dom lam

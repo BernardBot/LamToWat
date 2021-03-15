@@ -21,7 +21,7 @@ c2c :: Cps -> M Cps
 c2c (FIX fs e) = do
   nv <- ask
   fs' <- mapM (\ (f,as,b) -> do
-        b' <- local (++as) (c2c b)
+        b' <- local (++ as) (c2c b)
         return (f,_nv:as,open b' as nv)) fs
   tell fs'
   c2c e
@@ -31,9 +31,15 @@ c2c (APP v vs) = do
   let app = apply v vs'
   return (close app (v:vs) nv)
 c2c (DONE v) = return (DONE v)
-c2c (RECORD vs x e)  = local (++[x]) (c2c e >>= return . RECORD vs x)
-c2c (SELECT i v x e) = local (++[x]) (c2c e >>= return . SELECT i v x)
-c2c (ADD v1 v2 x e)  = local (++[x]) (c2c e >>= return . ADD v1 v2 x)
+c2c (RECORD vs x e)  = do
+  e' <- local (++ [x]) (c2c e)
+  return (RECORD vs x e')
+c2c (SELECT i v x e) = do
+  e' <- local (++ [x]) (c2c e)
+  return (SELECT i v x e')
+c2c (ADD v1 v2 x e)  = do
+  e' <- local (++ [x]) (c2c e)
+  return (ADD v1 v2 x e')
 
 open :: Cps -> [String] -> [String] -> Cps
 open e as nv = SELECT 1 (VAR _nv) _nv
@@ -41,7 +47,7 @@ open e as nv = SELECT 1 (VAR _nv) _nv
 
 apply :: Val -> [Val] -> Cps
 apply (LABEL f) vs = APP (LABEL f) (VAR (_p f) : vs)
-apply (VAR f) vs = SELECT 0 (VAR f) (_p f) (APP (VAR (_p f)) (VAR f:vs))
+apply (VAR f) vs = SELECT 0 (VAR f) (_p f) (APP (VAR (_p f)) (VAR f : vs))
 
 close :: Cps -> [Val] -> [String] -> Cps
 close e vs nv = RECORD (map VAR nv) _nv

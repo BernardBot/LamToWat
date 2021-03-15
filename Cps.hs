@@ -70,7 +70,7 @@ v2d (LABEL x) = ReaderT (lookup x)
 
 instance Show Val where
   show (VAR x) = x
-  show (LABEL x) = "_" ++ x
+  show (LABEL x) = x
   show (INT i) = show i
 
 tab = "  "
@@ -81,8 +81,8 @@ args ss = "(" ++ intercalate "," ss ++ ")"
 instance Show Cps where
   show (ADD v1 v2 x e)  = assign x (show v1 ++ " + " ++ show v2) ++ show e
   show (RECORD vs x e)  = assign x (show vs                    ) ++ show e
-  show (SELECT n v x e) = assign x (show v ++ " !! " ++ show n ) ++ show e
+  show (SELECT n v x e) = assign x (show v ++ "[" ++ show n ++ "]") ++ show e
   show (APP v vs)       = show v ++ args (map show vs)
-  show (DONE v)         = show v
+  show (DONE v)         = "return " ++ show v
   show (FIX fs e)       = concatMap showF fs                     ++ show e
     where showF (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (show b)

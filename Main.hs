@@ -14,5 +14,5 @@ import Tree2Tree
 import Tree2Wat
 
 main :: IO ()
-main = interact $ show . tree2wat . hFun . hRecord . hClosure [] . hFresh 0 [] . hBlock [] . lam2tree . str2lam
+main = interact $ show . tree2wat . hFun . hRecord . hClosure . hFresh . hBlock . lam2tree . str2lam
 

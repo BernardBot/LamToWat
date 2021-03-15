@@ -12,22 +12,22 @@ import Control.Monad
 import Data.Maybe
 import Data.List
 
-data Tree sig a where
-  Leaf :: a -> Tree sig a
-  Node :: sig
-       -> [Tree sig Val]
-       -> Maybe (Val -> Tree sig a)
-       -> Tree sig a
+data Tree cmd a where
+  Leaf :: a -> Tree cmd a
+  Node :: cmd
+       -> [Tree cmd Val]
+       -> Maybe (Val -> Tree cmd a)
+       -> Tree cmd a
 
-instance Monad (Tree sig) where
+instance Monad (Tree cmd) where
   Leaf a        >>= f = f a
-  Node sig ks k >>= f = Node sig ks (fmap (\ k x -> k x >>= f) k)
+  Node cmd ks k >>= f = Node cmd ks (fmap (\ k x -> k x >>= f) k)
 
-instance Applicative (Tree sig) where
+instance Applicative (Tree cmd) where
   pure = Leaf
   (<*>) = ap
 
-instance Functor (Tree sig) where
+instance Functor (Tree cmd) where
   fmap = liftM
 
 liftT f ks = Node f ks (Just Leaf)
@@ -67,9 +67,9 @@ data Malloc
   | LOAD' Int Val Val
   | STORE' Int Val Val
 
----------------
--- Injection --
----------------
+----------------------------
+-- Injection / Projection --
+----------------------------
 
 infixr 7 :+:
 data a :+: b = L a | R b
@@ -83,12 +83,12 @@ instance a :<: a where
   inj = id
   prj = Just
 
-instance {-# OVERLAPS #-} a :<: a :+: b where
+instance a :<: a :+: b where
   inj = L
   prj (L a) = Just a
   prj _ = Nothing
 
-instance a :<: c => a :<: b :+: c where
+instance {-# OVERLAPPABLE #-} a :<: c => a :<: b :+: c where
   inj = R . inj
   prj (R bc) = prj bc
   prj _ = Nothing
@@ -133,19 +133,50 @@ pattern LOAD i v x k <- (project -> Just (LOAD' i v x, [], Just k))
 store i s t = liftT (inj (STORE' i s t)) []
 pattern STORE i s t k <- (project -> Just (STORE' i s t, [], Just k))
 
------------
--- Print --
------------
+------------------
+-- Pretty Print --
+------------------
+
+instance Show Val where
+  show (VAR x) = x
+  show (LABEL x) = x
+  show (INT i) = show i
 
 tab = "  "
 indent = unlines . map (tab++) . lines
 assign x y = x ++ " = " ++ y ++ "\n"
 args ss = "(" ++ intercalate "," ss ++ ")"
 
-instance Show Val where
-  show (VAR x) = x
-  show (LABEL x) = x
-  show (INT i) = show i
+mkVar i s = intercalate "_" (map show s) ++ "__" ++ show i
+
+pprint i s (Leaf v) = show v
+pprint i s (ADD v1 v2 x k)  = assign (show x) (show v1 ++ " + " ++ show v2) ++ pprint i s (k x)
+pprint i s (APP v vs)       = show v ++ args (map show vs)
+pprint i s (FUN f as b k)   = "def " ++ show f ++ args (map show as) ++ ":\n" ++ indent (pprint i (s ++ [1]) b) ++ pprint i s (k f)
+pprint i s (FRESHLABEL x k) = let t = "_" ++ x ++ mkVar i s in assign t ("freshlabel " ++ x) ++ pprint (i+1) s (k (LABEL t))
+pprint i s (FRESHVAR x k)   = let t = "_" ++ x ++ mkVar i s in assign t ("freshvar " ++ x) ++ pprint (i+1) s (k (VAR t))
+pprint i s (BLOCK b k)      = let x = "_b" ++ mkVar i s in "block " ++ x ++ "\n{\n" ++ indent (pprint i (s ++ [1]) b) ++ "}\n" ++ pprint (i+1) s (k (VAR x))
+pprint i s (GETK x k)       = let t = "_g" ++ mkVar i s in assign t ("getk " ++ x) ++ pprint i s (k (VAR t))
+pprint i s (SETK x v k)     = "setk " ++ x ++ " " ++ show v ++ "\n" ++ pprint i s (k (INT 0))
+
+instance Show (Tree (Block :+: Fresh :+: Fun :+: Base) Val) where
+  show = pprint 0 []
+
+pprint' i s (Leaf v) = show v
+pprint' i s (ADD v1 v2 x k)  = assign (show x) (show v1 ++ " + " ++ show v2) ++ pprint' i s (k x)
+pprint' i s (APP v vs)       = show v ++ args (map show vs)
+pprint' i s (FUN f as b k)   = "def " ++ show f ++ args (map show as) ++ ":\n" ++ indent (pprint' i (s ++ [1]) b) ++ pprint' i s (k f)
+pprint' i s (FRESHLABEL x k) = let t = "_" ++ x ++ mkVar i s in assign t ("freshlabel " ++ x) ++ pprint' (i+1) s (k (LABEL t))
+pprint' i s (FRESHVAR x k)   = let t = "_" ++ x ++ mkVar i s in assign t ("freshvar " ++ x) ++ pprint' (i+1) s (k (VAR t))
+
+instance Show (Tree (Fresh :+: Fun :+: Base) Val) where
+  show = pprint' 0 []
+
+instance Show (Tree (Fun :+: Base) Val) where
+  show (Leaf v)         = show v
+  show (ADD v1 v2 x k)  = assign (show x) (show v1 ++ " + " ++ show v2) ++ show (k x)
+  show (APP v vs)       = show v ++ args (map show vs)
+  show (FUN f as b k)   = "def " ++ show f ++ args (map show as) ++ ":\n" ++ indent (show b) ++ show (k f)
 
 instance Show (Tree (Record :+: Fun :+: Base) Val) where
   show (Leaf v)         = show v
@@ -153,5 +184,21 @@ instance Show (Tree (Record :+: Fun :+: Base) Val) where
   show (APP v vs)       = show v ++ args (map show vs)
   show (FUN f as b k)   = "def " ++ show f ++ args (map show as) ++ ":\n" ++ indent (show b) ++ show (k f)
   show (RECORD vs x k)  = assign (show x) (show vs                    ) ++ show (k x)
-  show (SELECT n v x k) = assign (show x) (show v ++ " !! " ++ show n ) ++ show (k x)
+  show (SELECT n v x k) = assign (show x) (show v ++ "[" ++ show n ++ "]") ++ show (k x)
 
+instance Show (Tree (Malloc :+: Fun :+: Base) Val) where
+  show (Leaf v)         = show v
+  show (ADD v1 v2 x k)  = assign (show x) (show v1 ++ " + " ++ show v2) ++ show (k x)
+  show (APP v vs)       = show v ++ args (map show vs)
+  show (FUN f as b k)   = "def " ++ show f ++ args (map show as) ++ ":\n" ++ indent (show b) ++ show (k f)
+  show (MALLOC i x k)   = assign (show x) ("malloc " ++ show i) ++ show (k x)
+  show (LOAD i v x k)   = assign (show x) ("load " ++ show i ++ " " ++ show v) ++ show (k x)
+  show (STORE i s t k)  = "store " ++ show i ++ " " ++ show s ++ " " ++ show t ++ "\n" ++ show (k (INT 0))
+
+instance Show (Tree (Malloc :+: Base) Val) where
+  show (Leaf v)         = show v
+  show (ADD v1 v2 x k)  = assign (show x) (show v1 ++ " + " ++ show v2) ++ show (k x)
+  show (APP v vs)       = show v ++ args (map show vs)
+  show (MALLOC i x k)   = assign (show x) ("malloc " ++ show i) ++ show (k x)
+  show (LOAD i v x k)   = assign (show x) ("load " ++ show i ++ " " ++ show v) ++ show (k x)
+  show (STORE i s t k)  = "store " ++ show i ++ " " ++ show s ++ " " ++ show t ++ "\n" ++ show (k (INT 0))

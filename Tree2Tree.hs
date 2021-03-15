@@ -13,49 +13,63 @@ import Data.List
 hBlock :: ( Fresh :<: sig
           , Fun :<: sig
           , Base :<: sig) =>
+          Tree (Block :+: sig) Val -> Tree sig Val
+hBlock = hBlock' []
+
+hBlock' :: ( Fresh :<: sig
+          , Fun :<: sig
+          , Base :<: sig) =>
           [(String, Val)]
        -> Tree (Block :+: sig) Val -> Tree sig Val
-hBlock nv (BLOCK b k) = do
+hBlock' nv (BLOCK b k) = do
   r <- freshlabel "r"
   x <- freshvar "x"
-  fun r [x] (hBlock nv (k x))
-  v <- hBlock (("_nxt",r):nv) b
+  fun r [x] (hBlock' nv (k x))
+  v <- hBlock' (("_nxt",r):nv) b
   app r [v]
-hBlock nv (GETK x k) | Just v <- lookup x nv = hBlock nv (k v)
-hBlock nv (SETK x v k) = hBlock ((x,v):nv) (k (INT 0))
-hBlock nv (Leaf v) = Leaf v
-hBlock nv (Node (R cmd) ks k) =
+hBlock' nv (GETK x k) | Just v <- lookup x nv = hBlock' nv (k v)
+hBlock' nv (SETK x v k) = hBlock' ((x,v):nv) (k (INT 0))
+hBlock' nv (Leaf v) = Leaf v
+hBlock' nv (Node (R cmd) ks k) =
   Node cmd
-    (fmap (\ k -> hBlock nv k) ks)
-    (fmap (\ k x -> hBlock nv (k x)) k)
+    (fmap (\ k -> hBlock' nv k) ks)
+    (fmap (\ k x -> hBlock' nv (k x)) k)
 
-hFresh :: Int -> [Int] -> Tree (Fresh :+: sig) Val -> Tree sig Val
-hFresh i s (FRESHLABEL x k) =
-  hFresh (i+1) s (k (LABEL ("_" ++ x ++ intercalate "_" (map show s) ++ "__" ++ show i)))
-hFresh i s (FRESHVAR x k) =
-  hFresh (i+1) s (k (VAR   ("_" ++ x ++ intercalate "_" (map show s) ++ "__" ++ show i)))
-hFresh i s (Leaf v) = Leaf v
-hFresh i s (Node (R cmd) ks k) = do
+hFresh :: Tree (Fresh :+: sig) Val -> Tree sig Val
+hFresh = hFresh' 0 []
+
+hFresh' :: Int -> [Int] -> Tree (Fresh :+: sig) Val -> Tree sig Val
+hFresh' i s (FRESHLABEL x k) =
+  hFresh' (i+1) s (k (LABEL ("_" ++ x ++ intercalate "_" (map show s) ++ "__" ++ show i)))
+hFresh' i s (FRESHVAR x k) =
+  hFresh' (i+1) s (k (VAR   ("_" ++ x ++ intercalate "_" (map show s) ++ "__" ++ show i)))
+hFresh' i s (Leaf v) = Leaf v
+hFresh' i s (Node (R cmd) ks k) = do
   Node cmd
-    (zipWith (\ k j -> hFresh i (s ++ [j]) k) ks [1..]) -- hack?
-    (fmap (\ k x -> hFresh i (s ++ [0])  (k x)) k)
+    (zipWith (\ k j -> hFresh' i (s ++ [j]) k) ks [1..]) -- hack?
+    (fmap (\ k x -> hFresh' i (s ++ [0])  (k x)) k)
 
 _nv = VAR "_nv"
 _p = ('_' :)
 
 hClosure :: ( Fun :<: sig
             , Base :<: sig) =>
+            Tree sig Val -> Tree (Record :+: sig) Val
+hClosure = hClosure' []
+
+hClosure' :: ( Fun :<: sig
+            , Base :<: sig) =>
             [Val] -> Tree sig Val -> Tree (Record :+: sig) Val
-hClosure nv (FUN f as b k) = do
+hClosure' nv (FUN f as b k) = do
   fun f (_nv:as)
     (do select 1 _nv _nv
         zipWithM_ (\ i v ->
                      if v `elem` as
                      then return v
                      else select i _nv v) [0..] nv
-        hClosure (nv++as) b)
-  hClosure nv (k f)
-hClosure nv (APP v vs) = do
+        hClosure' (nv++as) b)
+  hClosure' nv (k f)
+hClosure' nv (APP v vs) = do
   record nv _nv
   vs' <- mapM (\ v -> case v of
                    LABEL f -> record [v,_nv] (VAR (_p f))
@@ -67,11 +81,11 @@ hClosure nv (APP v vs) = do
     LABEL f -> do
       fc <- record [v,_nv] (VAR (_p f))
       app v (fc:vs')
-hClosure nv (Leaf v) = Leaf v
-hClosure nv (Node cmd ks k) =
+hClosure' nv (Leaf v) = Leaf v
+hClosure' nv (Node cmd ks k) =
   Node (R cmd)
-    (fmap (\ k -> hClosure nv k) ks) -- hack
-    (fmap (\ k x -> hClosure (nv++[x]) (k x)) k)
+    (fmap (\ k -> hClosure' nv k) ks) -- hack
+    (fmap (\ k x -> hClosure' (nv++[x]) (k x)) k)
 
 hRecord :: Tree (Record :+: sig) Val -> Tree (Malloc :+: sig) Val
 hRecord (RECORD vs x k) = do
