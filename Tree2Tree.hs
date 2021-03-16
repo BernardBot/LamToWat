@@ -10,19 +10,19 @@ import Control.Monad
 
 import Data.List
 
-hBlock :: ( Fresh :<: sig
-          , Fun   :<: sig
-          , Base  :<: sig ) =>
-          Tree (Block :+: sig) Val ->
-          Tree sig Val
+hBlock :: ( Fresh :<: cmd
+          , Fun   :<: cmd
+          , Base  :<: cmd ) =>
+          Tree (Block :+: cmd) Val ->
+          Tree cmd Val
 hBlock = hBlock' []
 
-hBlock' :: ( Fresh :<: sig
-           , Fun   :<: sig
-           , Base  :<: sig ) =>
+hBlock' :: ( Fresh :<: cmd
+           , Fun   :<: cmd
+           , Base  :<: cmd ) =>
            [(String, Val)] ->
-           Tree (Block :+: sig) Val ->
-           Tree sig Val
+           Tree (Block :+: cmd) Val ->
+           Tree cmd Val
 hBlock' nv (BLOCK b k) = do
   VAR r <- fresh "r"
   VAR x <- fresh "x"
@@ -37,10 +37,10 @@ hBlock' nv (Node (R cmd) ks k) =
     (fmap (\ k -> hBlock' nv k) ks)
     (fmap (\ k x -> hBlock' nv (k x)) k)
 
-hFresh :: Tree (Fresh :+: sig) Val -> Tree sig Val
+hFresh :: Tree (Fresh :+: cmd) Val -> Tree cmd Val
 hFresh = hFresh' 0 []
 
-hFresh' :: Int -> [Int] -> Tree (Fresh :+: sig) Val -> Tree sig Val
+hFresh' :: Int -> [Int] -> Tree (Fresh :+: cmd) Val -> Tree cmd Val
 hFresh' i s (FRESH x k) =
   hFresh' (i+1) s (k (VAR ("_" ++ x ++ intercalate "_" (map show s) ++ "__" ++ show i)))
 hFresh' i s (Leaf v) = Leaf v
@@ -52,17 +52,17 @@ hFresh' i s (Node (R cmd) ks k) = do
 _nv = "_nv"
 _p = ('_' :)
 
-hClosure :: ( Fun :<: sig
-            , Base :<: sig) =>
-            Tree sig Val ->
-            Tree (Record :+: sig) Val
+hClosure :: ( Fun :<: cmd
+            , Base :<: cmd) =>
+            Tree cmd Val ->
+            Tree (Record :+: cmd) Val
 hClosure = hClosure' []
 
-hClosure' :: ( Fun  :<: sig
-             , Base :<: sig ) =>
+hClosure' :: ( Fun  :<: cmd
+             , Base :<: cmd ) =>
              [String] ->
-             Tree sig Val ->
-             Tree (Record :+: sig) Val
+             Tree cmd Val ->
+             Tree (Record :+: cmd) Val
 hClosure' nv (FUN f as b k) = do
   fun f (_nv:as)
     (do select 1 (VAR _nv) _nv
@@ -90,7 +90,7 @@ hClosure' nv (Node cmd ks k) =
     (fmap (\ k -> hClosure' nv k) ks) -- hack
     (fmap (\ k v -> hClosure' (nv ++ case v of VAR x -> [x]; _ -> []) (k v)) k)
 
-hRecord :: Tree (Record :+: sig) Val -> Tree (Malloc :+: sig) Val
+hRecord :: Tree (Record :+: cmd) Val -> Tree (Malloc :+: cmd) Val
 hRecord (RECORD vs x k) = do
   malloc (length vs) x
   zipWithM_ (\ i v -> store i (VAR x) v) [0..] vs

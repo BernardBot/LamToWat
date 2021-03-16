@@ -162,7 +162,7 @@ pprint (Leaf v) = return (show v)
 pprint (ADD v1 v2 x k) = do
   x <- vresh "x"
   k' <- pprint (k (VAR x))
-  return (assign (show x) (show v1 ++ " + " ++ show v2) ++ k')
+  return (assign x (show v1 ++ " + " ++ show v2) ++ k')
 pprint (APP v vs) = return (show v ++ args (map show vs))
 pprint (FUN f as b k) = do
   b' <- pprint b
@@ -171,7 +171,7 @@ pprint (FUN f as b k) = do
 pprint (FRESH x k) = do
   f <- vresh x
   k' <- pprint (k (VAR f))
-  return (assign f ("vresh " ++ x) ++ k')
+  return (assign f ("fresh " ++ x) ++ k')
 pprint (BLOCK b k) = do
   x <- vresh "b"
   b' <- pprint b
@@ -192,7 +192,7 @@ pprint' (Leaf v) = return (show v)
 pprint' (ADD v1 v2 x k) = do
   x <- vresh "x"
   k' <- pprint' (k (VAR x))
-  return (assign (show x) (show v1 ++ " + " ++ show v2) ++ k')
+  return (assign x (show v1 ++ " + " ++ show v2) ++ k')
 pprint' (APP v vs) = return (show v ++ args (map show vs))
 pprint' (FUN f as b k) = do
   b' <- pprint' b
@@ -201,7 +201,7 @@ pprint' (FUN f as b k) = do
 pprint' (FRESH x k) = do
   f <- vresh x
   k' <- pprint' (k (VAR f))
-  return (assign f ("vresh " ++ x) ++ k')
+  return (assign f ("fresh " ++ x) ++ k')
 
 instance Show (Tree (Fresh :+: Fun :+: Base) Val) where
   show = fst . flip runState 0 . pprint'
