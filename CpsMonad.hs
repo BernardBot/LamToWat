@@ -10,6 +10,7 @@ data Cps a
   | RECORD [Val] (Val -> Cps a)
   | SELECT Int Val (Val -> Cps a)
   | FIX [(String,[String],Cps Val)] (Cps a)
+
   | FRESH String (String -> Cps a)
   | GETK (Val -> Cps a)
   | SETK Val (Cps a)
@@ -22,6 +23,7 @@ instance Monad Cps where
   RECORD vs k  >>= f = RECORD vs (\ x -> k x >>= f)
   SELECT i v k >>= f = SELECT i v (\ x -> k x >>= f)
   FIX fs k     >>= f = FIX fs (k >>= f)
+
   FRESH x k    >>= f = FRESH x (\ x -> k x >>= f)
   GETK k       >>= f = GETK (\ x -> k x >>= f)
   SETK v k     >>= f = SETK v (k >>= f)
