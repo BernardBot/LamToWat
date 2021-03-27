@@ -16,6 +16,13 @@ import Control.Monad.Reader hiding (fix)
 
 type M = StateT Int (Reader [(String,Val)])
 
+tree2tps :: Tree Cmd Val -> Tps (Fix :+: Base) Val
+tree2tps =
+  fst .
+  flip runReader [] .
+  flip runStateT 0 .
+  t2t
+
 fresh :: String -> M String
 fresh s = do
   i <- get
