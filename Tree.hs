@@ -38,7 +38,7 @@ liftF op ps = Node op ps None
 ------------------
 
 data Cmd :: Nat -> Bool -> * -> * -> * -> * where
-  Plus  :: Val -> Val ->               Cmd Z     True  Void  Void Val
+  Add   :: Val -> Val ->               Cmd Z     True  Void  Void Val
   App   :: Val -> [Val] ->             Cmd Z     False Void  Void Val
   Fix   :: Vec n (String, [String]) -> Cmd n     True  ()    Val  ()
   GetK  :: String ->                   Cmd Z     True  Val   Val  Val
@@ -50,8 +50,8 @@ data Cmd :: Nat -> Bool -> * -> * -> * -> * where
 --- boilerplate liftings ---
 ----------------------------
 
-plus :: Val -> Val -> Tree Cmd Val
-plus v1 v2 = liftT (Plus v1 v2) Nil
+add :: Val -> Val -> Tree Cmd Val
+add v1 v2 = liftT (Add v1 v2) Nil
 
 app :: Val -> [Val] -> Tree Cmd Val
 app v vs = liftF (App v vs) Nil
@@ -89,13 +89,13 @@ instance Show Val where
   show (LABEL x) = x
 
 instance Show (Cmd n b p r q) where
-  show (Plus v1 v2) = "(Plus " ++ show v1 ++ " " ++ show v2 ++ ")"
-  show (App v vs)   = "(App " ++ show v ++ " " ++ show vs ++ ")"
-  show (Fix fxs)    = "(Fix " ++ show fxs ++ ")"
-  show (SetK x v)   = "(SetK " ++ x ++ " " ++ show v ++ ")"
-  show (GetK x)     = "(GetK " ++ x ++ ")"
-  show Block        = "(Block)"
-  show (Fresh x)    = "(Fresh " ++ x ++ ")"
+  show (Add v1 v2) = "(Add " ++ show v1 ++ " " ++ show v2 ++ ")"
+  show (App v vs)  = "(App " ++ show v ++ " " ++ show vs ++ ")"
+  show (Fix fxs)   = "(Fix " ++ show fxs ++ ")"
+  show (SetK x v)  = "(SetK " ++ x ++ " " ++ show v ++ ")"
+  show (GetK x)    = "(GetK " ++ x ++ ")"
+  show Block       = "(Block)"
+  show (Fresh x)   = "(Fresh " ++ x ++ ")"
 
 ---------------------------------------
 --- show instance for command trees ---
@@ -103,7 +103,7 @@ instance Show (Cmd n b p r q) where
 
 pprint :: Show a => Tree Cmd a -> Int -> String
 pprint (Leaf x) _ = show x
-pprint (Node op@(Plus _ _) Nil (Some k)) i =
+pprint (Node op@(Add _ _) Nil (Some k)) i =
   let x = "x" ++ show i
   in show op ++ " (λ " ++ x ++ " → " ++ pprint (k (VAR x)) (i + 1) ++ ")"
 pprint (Node op@(App _ _) Nil None) _ =

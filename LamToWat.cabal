@@ -9,13 +9,24 @@ extra-source-files:  README.md
 executable lam2wat
   main-is:             Main.hs
   other-modules:
+                       Val
+                       Lam
+                       Wat
+
                        Cps
+                       Lam2Cps
                        Cps2Cps
                        Cps2Wat
-                       Lam
-                       Lam2Cps
+
+                       Option
+                       Vec
+                       Tree
+                       Tps
+                       Tree2Tps
+                       Tps2Tps
+                       Tps2Wat
+                       
                        Test
-                       Wat
 
   build-depends:       base >=4.13 && <4.14,
                        directory >= 1.3.6.0,

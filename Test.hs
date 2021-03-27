@@ -38,6 +38,8 @@ testAll str = do
   let Cps.Int cpsdom' = cps2dom cps'
   let watdom = wat2dom wat
 
+  str2res str
+
   let doms = [lamdom,cpsdom,cpsdom',watdom]
 
   putStr $ unlines $ zipWith (++)

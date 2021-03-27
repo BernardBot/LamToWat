@@ -15,7 +15,7 @@ data Lam
   | App Lam Lam
   | Add Lam Lam
   | Var String
-  | Int Int
+  | Num Int
   deriving Show
 
 -----------------
@@ -46,7 +46,7 @@ l2d (Add e1 e2) = do
   INT i2 <- l2d e2
   return $ INT $ i1 + i2
 l2d (Var x) = ReaderT $ lookup x
-l2d (Int i) = return $ INT i
+l2d (Num i) = return $ INT i
 
 ---------------------
 -- Pretty Printing --
@@ -61,7 +61,7 @@ pprint (Lam x e) = "(\\ " ++ x ++ go e
           Lam x e -> " " ++ x ++ go e
           _       -> " -> " ++ pprint e ++ ")"
 pprint (Var x) = x
-pprint (Int i) = show i
+pprint (Num i) = show i
 pprint (Add e1 e2) = pprint e1 ++ " + " ++
     case e2 of
       App {} -> "(" ++ pprint e2 ++ ")"
@@ -121,7 +121,7 @@ var :: Parser Lam
 var = Var <$> word
 
 int :: Parser Lam
-int = Int <$> decimal
+int = Num <$> decimal
 
 keywords :: [String]
 keywords = ["let", "in"]

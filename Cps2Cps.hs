@@ -1,5 +1,6 @@
 module Cps2Cps where
 
+import Val
 import Cps hiding (M)
 
 import Control.Monad.Writer
