@@ -1,5 +1,6 @@
 module Cps2Wat where
 
+import Val
 import Cps
 import Wat
 
@@ -18,12 +19,12 @@ cps2wat (FIX fs e) = Module fs' (go e)
         go (APP v vs) = App (vo v) (map vo vs)
         go (DONE v) = Done (vo v)
         go (RECORD vs x e) = Malloc (length vs) x
-          (foldr (\ (i,v) -> Store i (Wat.VAR x) (vo v)) (go e) (zip [0..] vs))
+          (foldr (\ (i,v) -> Store i (VAR x) (vo v)) (go e) (zip [0..] vs))
         go (SELECT i v x e) = Load i (vo v) x (go e)
         go (ADD v1 v2 x e) = Add (vo v1) (vo v2) x (go e)
 
-        vo :: Cps.Val -> Wat.Val
-        vo (Cps.INT i) = Wat.INT i
-        vo (Cps.VAR x) = Wat.VAR x
-        vo (Cps.LABEL x) = Wat.INT (fromJust (x `elemIndex` ns))
+
+        vo (INT i) = INT i
+        vo (VAR x) = VAR x
+        vo (LABEL x) = INT (fromJust (x `elemIndex` ns))
 

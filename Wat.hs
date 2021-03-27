@@ -1,13 +1,12 @@
 module Wat where
 
+import Val
+
 import Control.Monad.Reader
 import Control.Monad.State
 
 import Data.Maybe
-
-data Val
-  = INT Int
-  | VAR String
+import Data.List
 
 data Wat = Module [(String,[String],Exp)] Exp
 
@@ -82,22 +81,63 @@ w2d (Module fs e) = go e
 -- Pretty Printing --
 ---------------------
 
-instance Show Val where
-  show (VAR x) = x
-  show (INT i) = show i
+_p = "_p"
+_t = "_t"
+_start = "_start"
 
+intSize = 4
+
+spaced = intercalate " "
+sp = spaced . map show
 indent = unlines . map ("  "++) . lines
-assign x y = x ++ " = " ++ y ++ "\n"
+
+lv :: Exp -> [String]
+lv (Add _ _ x e)  = x : lv e
+lv (Malloc _ x e) = x : lv e
+lv (Load _ _ x e) = x : lv e
+lv (Store _ _ _ e) = lv e
+lv e = []
+
+instance Show Val where
+  show (VAR x) = "(local.get $" ++ x ++ ")"
+  show (INT i) = "(i32.const " ++ show i ++ ")"
 
 instance Show Wat where
-  show (Module fs e) = "module\n" ++ concatMap showF fs ++ "" ++ show e
-    where showF (f,as,b) = "func " ++ f ++ concatMap (\ a -> " (param " ++ a ++ ")") as ++ "\n" ++ indent (show b)
+  show (Module fs e) =
+    "(module\n" ++
+    "(memory 1)\n" ++
+    "(global $" ++ _p ++ " (mut i32) (i32.const 0))\n" ++
+    "(table " ++ show (length fs) ++ " funcref)\n" ++
+    "(elem (i32.const 0)" ++ concatMap (\ name -> " $" ++ name) names ++ ")\n" ++
+    types ++
+    "(export \"" ++ _start ++ "\" (func $" ++ _start ++ "))\n" ++
+    funcs ++ ")"
+    where names = map (\ (f,_,_) -> f) fs
+          funcs = concatMap func ((_start,[],e):fs)
+          lengths = sort (nub (map (\ (_,as,_) -> length as) fs))
+          types = concatMap typedef lengths
+
+typedef len = "(type $" ++ _t ++ show len ++ " (func " ++ spaced (replicate len "(param i32)") ++ " (result i32)))\n"
+
+func (f,as,b) =
+  "(func $" ++ f ++ " " ++ params as ++ " (result i32) " ++ locals ls ++ "\n" ++ indent (show b) ++ ")\n"
+  where param p = "(param $" ++ p ++ " i32)"
+        local l = "(local $" ++ l ++ " i32)"
+        params = spaced . map param
+        locals = spaced . map local
+        ls = nub (lv b) \\ as
 
 instance Show Exp where
-  show (Done v) = "return " ++ show v
-  show (App v vs) = "call " ++ show v ++ concatMap ((' ':) . show) vs
-  show (Add v1 v2 x e) = assign x (show v1 ++ " + " ++ show v2) ++ show e
-  show (Malloc i x e) = assign x ("malloc " ++ show i) ++ show e
-  show (Load i v x e) = assign x ("load " ++ show i ++ " " ++ show v) ++ show e
-  show (Store i s t e) = "store " ++ show i ++ " " ++ show s ++ " " ++ show t ++ "\n" ++ show e
+  show (Done v) = show v
+  show (App v vs) = "(call_indirect (type $" ++ _t ++ show (length vs) ++ ") " ++ sp vs ++ " " ++ show v ++ ")"
+  show (Add v1 v2 x e) = "(local.set $" ++ x ++ " (i32.add " ++ show v1 ++ " " ++ show v2 ++"))\n" ++ show e
+  show (Malloc i x e) = "(local.set $" ++ x ++ " (global.get $" ++ _p ++ "))\n" ++
+    "(global.set $" ++ _p ++ " (i32.add (global.get $" ++ _p ++ ") (i32.const " ++ show (intSize * i) ++ ")))\n" ++
+    show e
+  show (Load i v x e) = "(local.set $" ++ x ++ " (i32.load offset=" ++ show (intSize * i) ++ " " ++ show v ++ "))\n" ++ show e
+  show (Store i s t e) = "(i32.store offset=" ++ show (intSize * i) ++ " " ++ show s ++ " " ++ show t ++ ")\n" ++ show e
 
+
+e = Module 
+  [("f",["x"],Add (VAR "x") (INT 1) "r" (Done (VAR "r")))]
+  (App (INT 0) [INT 41])

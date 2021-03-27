@@ -14,17 +14,14 @@ executable lam2wat
                        Cps2Wat
                        Lam
                        Lam2Cps
-                       Lam2Tree
                        Test
-                       Tree
-                       Tree2Tree
-                       Tree2Wat
                        Wat
 
   build-depends:       base >=4.13 && <4.14,
                        directory >= 1.3.6.0,
                        megaparsec >= 9.0.1,
                        mtl >= 2.2.2,
-                       parser-combinators >= 1.3.0
+                       parser-combinators >= 1.3.0,
+                       shake >= 0.19.4
 
   default-language:    Haskell2010

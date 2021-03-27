@@ -1,14 +1,11 @@
 module Cps where
   
+import Val
+
 import Data.Maybe
 import Data.List
 import Control.Monad.Reader
 
-data Val
-  = INT Int
-  | VAR String
-  | LABEL String
-  
 type Fun = (String, [String], Cps)
 data Cps
   = APP Val [Val]
@@ -86,3 +83,15 @@ instance Show Cps where
   show (DONE v)         = "return " ++ show v
   show (FIX fs e)       = concatMap showF fs                     ++ show e
     where showF (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (show b)
+
+e = FIX [("done",["x","r"], DONE (VAR "x")),
+         ("loop",["x","r"], ADD (INT 10) (VAR "x") "x"
+                            (SELECT 0 (VAR "r") "t"
+                            (SELECT 1 (VAR "r") "r"
+                            (APP (VAR "t") [VAR "x",VAR "r"]))))]
+    (RECORD [LABEL "done"] "r0"
+    (RECORD [LABEL "loop", VAR "r0"] "r1"
+    (RECORD [LABEL "loop", VAR "r1"] "r2"
+    (RECORD [LABEL "loop", VAR "r2"] "r3"
+    (RECORD [LABEL "loop", VAR "r3"] "r"
+    (APP (LABEL "loop") [INT 0, VAR "r"]))))))
