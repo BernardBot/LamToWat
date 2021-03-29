@@ -7,7 +7,7 @@ build-type:          Simple
 extra-source-files:  README.md
 
 executable lam2wat
-  main-is:             Main.hs
+  main-is:             ./src/Main.hs
   other-modules:
                        Val
                        Lam
@@ -22,17 +22,59 @@ executable lam2wat
                        Vec
                        Tree
                        Tps
+                       Lam2Tree
+                       Tree2Tps
+                       Tps2Tps
+                       Tps2Wat
+
+  build-depends:       base >=4.13 && <4.14,
+                       megaparsec >= 9.0.1,
+                       mtl >= 2.2.2,
+                       parser-combinators >= 1.3.0,
+                       directory >= 1.3.6.0,
+                       shake >= 0.19.4
+
+  hs-source-dirs:      .
+                       src
+                       src/Tps
+                       src/Cps
+                       src/Common
+
+  default-language:    Haskell2010  
+
+test-suite lam2test
+  type:                exitcode-stdio-1.0           
+  main-is:             ./test/Test.hs
+  other-modules:       Val
+                       Lam
+                       Wat
+
+                       Cps
+                       Lam2Cps
+                       Cps2Cps
+                       Cps2Wat
+
+                       Option
+                       Vec
+                       Tree
+                       Tps
+                       Lam2Tree
                        Tree2Tps
                        Tps2Tps
                        Tps2Wat
                        
-                       Test
-
   build-depends:       base >=4.13 && <4.14,
-                       directory >= 1.3.6.0,
                        megaparsec >= 9.0.1,
                        mtl >= 2.2.2,
                        parser-combinators >= 1.3.0,
+                       directory >= 1.3.6.0,
                        shake >= 0.19.4
 
+  hs-source-dirs:      .
+                       src
+                       src/Tps
+                       src/Cps
+                       src/Common
+
   default-language:    Haskell2010
+

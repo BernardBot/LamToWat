@@ -1,4 +1,4 @@
-module Test where
+module Main where
 
 import Development.Shake
 
@@ -17,11 +17,8 @@ import Tree2Tps
 import Tps2Tps
 import Tps2Wat
 
-testDir :: FilePath
-testDir = "./test/"
-
-runTest :: IO ()
-runTest = do
+main :: IO ()
+main = do
   tests <- listDirectory testDir
   mapM_ (\ f -> do
             putStrLn ""
@@ -29,6 +26,9 @@ runTest = do
             file <- readFile $ testDir ++ f
             testAll file)
     tests
+
+testDir :: FilePath
+testDir = "./test/lam/"
 
 testAll :: String -> IO ()
 testAll str = do
@@ -53,19 +53,19 @@ testAll str = do
     ["lambda", "cps", "closed cps", "wat", "wat from tree"] $
     map ((": "++) . show) doms
 
-  putStrLn $ "TESTS " ++ if all (==lamdom) doms then "PASSED" else "FAILED"
+  putStrLn $ "TESTS " ++ if all (==lamdom) doms then "PASSED" else error "FAILED"
 
 str2wat = cps2wat . cps2cps . lam2cps . str2lam
 str2watfile str watfile = writeFile watfile $ show $ str2wat str
 
 testfile = "test"
-testwatfile = testfile ++ ".wat"
-testwasmfile = testfile ++ ".wasm"
+testwatfile = "./test/" ++ testfile ++ ".wat"
+testwasmfile = "./test/" ++ testfile ++ ".wasm"
 wat2wasm = "/Users/ben/wabt/bin/wat2wasm"
 wasminterp = "/Users/ben/wabt/bin/wasm-interp"
 
 str2res :: String -> IO ()
 str2res str = do
   str2watfile str testwatfile
-  cmd_ wat2wasm [testwatfile]
+  cmd_ wat2wasm [testwatfile, "--output=" ++ testwasmfile]
   cmd_ wasminterp [testwasmfile, "--run-all-exports"]
