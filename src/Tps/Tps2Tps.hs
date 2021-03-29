@@ -14,7 +14,7 @@ import Control.Monad
 
 hClos = hClos' []
 
-hClos' :: [String] -> Tps (Fix :+: Base) Val -> Tps (Record :+: Fix :+: Base) Val
+hClos' :: [String] -> Tps (Fix :+: Base :+: cmd) Val -> Tps (Record :+: Fix :+: Base :+: cmd) Val
 hClos' nv (Node (L (Fix fxs)) bs (Some (_,k))) = do
   let fxs' = mapV (\ (f,as) -> (f,"_nv":as)) fxs
       bs' = zipWithV (\ (f,as) b -> do
@@ -26,7 +26,7 @@ hClos' nv (Node (L (Fix fxs)) bs (Some (_,k))) = do
                        hClos' (nv ++ as) b) fxs bs
   fix fxs' bs' (hClos' nv k)
 
-hClos' nv (Node (R (App v vs)) Nil None) = do
+hClos' nv (Node (R (L (App v vs))) Nil None) = do
   record_ (map VAR nv) "_nv"
   vs' <- mapM (\ v -> case v of
                   LABEL f -> do
@@ -43,7 +43,6 @@ hClos' nv (Node (R (App v vs)) Nil None) = do
       let fp = "_" ++ f
       select_ 0 v fp
       app (VAR fp) (v:vs')
-
 hClos' nv (Leaf v) = Leaf v
 hClos' nv (Node cmd ks k) =
   Node (R cmd)
@@ -65,14 +64,10 @@ hRecord (Node (R cmd) ks k) =
     (mapV (\ k -> hRecord k) ks)
     (fmap (\ (o,k) -> (o,hRecord k)) k)
 
-type Tps' = Tps (Malloc :+: Base) Val
-
-hFun :: Tps (Malloc :+: Fix :+: Base) Val -> ([(String,[String],Tps')],Tps')
-hFun (Leaf v)                                         = ([],Leaf v)
-hFun (Node (L (Malloc i))      Nil (Some (Some x,k))) = let (fs,b) = hFun k in (fs,malloc i x b)
-hFun (Node (L (Load i v))      Nil (Some (Some x,k))) = let (fs,b) = hFun k in (fs,load i v x b)
-hFun (Node (L (Store i s t))   Nil (Some (_,k)))      = let (fs,b) = hFun k in (fs,store i s t b)
-hFun (Node (R (R (Add v1 v2))) Nil (Some (Some x,k))) = let (fs,b) = hFun k in (fs,add v1 v2 x b)
-hFun (Node (R (R (App v vs)))  Nil None)              = ([],app v vs)
-hFun (Node (R (L (Fix fxs)))   bs  (Some (_,k)))      = let (fs,b) = hFun k in (fs'++fs,b)
+hFun :: Tps (Fix :+: cmd) Val -> ([(String,[String],Tps cmd Val)],Tps cmd Val)
+hFun (Leaf v) = ([],Leaf v)
+hFun (Node (R cmd) Nil k) = case fmap (fmap hFun) k of
+  Some (x,(fs,k')) -> (fs,Node cmd Nil (Some (x,k')))
+  None             -> ([],Node cmd Nil None)
+hFun (Node (L (Fix fxs)) bs (Some (None, k))) = let (fs,k') = hFun k in (fs'++fs,k')
   where fs' = concatMap (\ ((f,as),b) -> let (fs,b') = hFun b in (f,as,b') : fs) (zip (toList fxs) (toList bs))

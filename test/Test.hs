@@ -12,6 +12,7 @@ import Lam2Cps
 import Cps2Cps
 import Cps2Wat
 
+import Tps
 import Lam2Tree
 import Tree2Tps
 import Tps2Tps
@@ -36,7 +37,7 @@ testAll str = do
   let cps = lam2cps $ str2lam $ str
   let cps' = cps2cps $ lam2cps $ str2lam $ str
   let wat = cps2wat $ cps2cps $ lam2cps $ str2lam $ str
-  let wat' = tps2wat $ hFun $ hRecord $ hClos $ tree2tps $ lam2tree $ str2lam $ str
+  let wat' = tps2wat $ hFun $ swap $ hRecord $ hClos $ tree2tps $ lam2tree $ str2lam $ str
 
   -- should always have integer results
   let Lam.INT lamdom = lam2dom lam

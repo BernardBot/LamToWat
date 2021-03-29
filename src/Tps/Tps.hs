@@ -61,6 +61,8 @@ data Malloc :: Sig where
   Load   :: Int -> Val ->        Malloc Z True True
   Store  :: Int -> Val -> Val -> Malloc Z True False
 
+data VoidCmd :: Sig where
+
 ----------------------------
 -- Injection / Projection --
 ----------------------------
@@ -109,3 +111,18 @@ load_ i v x = load i v x (Leaf ())
 
 store i s t k = liftT (inj (Store i s t)) Nil None k
 store_ i s t = store i s t (Leaf ())
+
+----------------------
+-- Helper Functions --
+----------------------
+
+swap :: Tps (a :+: b :+: cmd) Val -> Tps (b :+: a :+: cmd) Val
+swap (Leaf v) = Leaf v
+swap (Node cmd ks k) =
+  case cmd of
+    L cmd     -> mknode (R (L cmd))
+    R (L cmd) -> mknode (L    cmd )
+    R (R cmd) -> mknode (R (R cmd))
+  where mknode cmd' = Node cmd' ks' k'
+        ks'         = fmap swap ks
+        k'          = fmap (fmap swap) k
