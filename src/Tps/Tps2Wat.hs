@@ -31,7 +31,6 @@ tps2wat (fs,e) = Module fs' (go e)
         go (Node (R (L (Add v1 v2))) Nil (Some (Some x,k))) = W.Add (vo v1) (vo v2) x (go k)
         go (Node (R (L (App v vs)))  Nil None)              = W.App (vo v) (map vo vs)
         
-        vo (INT i) = INT i
-        vo (VAR x) = VAR x
-        vo (LABEL x) = INT (fromJust (x `elemIndex` ns))
-        
+        vo v = case v of
+          LABEL x -> INT (fromJust (x `elemIndex` ns))
+          _       -> v

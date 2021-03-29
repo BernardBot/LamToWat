@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators #-}
@@ -116,13 +117,15 @@ store_ i s t = store i s t (Leaf ())
 -- Helper Functions --
 ----------------------
 
-swap :: Tps (a :+: b :+: cmd) Val -> Tps (b :+: a :+: cmd) Val
-swap (Leaf v) = Leaf v
-swap (Node cmd ks k) =
-  case cmd of
-    L cmd     -> mknode (R (L cmd))
-    R (L cmd) -> mknode (L    cmd )
-    R (R cmd) -> mknode (R (R cmd))
-  where mknode cmd' = Node cmd' ks' k'
-        ks'         = fmap swap ks
-        k'          = fmap (fmap swap) k
+liftSigF :: (forall n b c. sig n b c -> sig' n b c) -> Tps sig Val -> Tps sig' Val
+liftSigF f tree = go tree
+  where go (Leaf v) = Leaf v
+        go (Node cmd ks k) = Node (f cmd) (fmap go ks) (fmap (fmap go) k)
+                       
+swap' :: (f :+: g :+: h) n b c -> (g :+: f :+: h) n b c
+swap' (L a)     = R (L a)
+swap' (R (L a)) = L a
+swap' (R (R a)) = R (R a)
+
+swap :: Tps (f :+: g :+: h) Val -> Tps (g :+: f :+: h) Val
+swap = liftSigF swap'
