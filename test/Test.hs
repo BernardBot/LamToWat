@@ -1,72 +1,57 @@
-module Main where
+module Test (tests) where
 
-import Development.Shake
+import Distribution.TestSuite
 
 import System.Directory
 
-import Lam
-import Wat
-
-import Cps
-import Lam2Cps
-import Cps2Cps
-import Cps2Wat
-
-import Tps
-import Lam2Tree
-import Tree2Tps
-import Tps2Tps
-import Tps2Wat
-
-main :: IO ()
-main = do
-  tests <- listDirectory testDir
-  mapM_ (\ f -> do
-            putStrLn ""
-            putStrLn f
-            file <- readFile $ testDir ++ f
-            testAll file)
-    tests
+import Run
 
 testDir :: FilePath
-testDir = "./test/lam/"
+testDir = "./test"
 
-testAll :: String -> IO ()
-testAll str = do
-  let lam = str2lam str
-  let cps = lam2cps $ str2lam $ str
-  let cps' = cps2cps $ lam2cps $ str2lam $ str
-  let wat = cps2wat $ cps2cps $ lam2cps $ str2lam $ str
-  let wat' = tps2wat $ hFun $ swap $ hRecord $ hClos $ tree2tps $ lam2tree $ str2lam $ str
+testfileDir :: FilePath
+testfileDir = testDir ++ "/lam/"
 
-  -- should always have integer results
-  let Lam.INT lamdom = lam2dom lam
-  let Cps.Int cpsdom = cps2dom cps
-  let Cps.Int cpsdom' = cps2dom cps'
-  let watdom = wat2dom wat
-  let watdom' = wat2dom wat'
+listWithDirectory :: FilePath -> IO [FilePath]
+listWithDirectory dir = fmap (fmap (dir++)) (listDirectory dir)
 
-  str2res str
+tests :: IO [Test]
+tests = do
+  testfilenames <- listWithDirectory testfileDir
+  testfiles <- mapM readFile testfilenames
+  return $ zipWith
+    (\ filename file -> Test $ TestInstance
+       { run = testAllResult file
+       , name = filename
+       , tags = []
+       , options = []
+       , setOption = undefined
+       })
+    testfilenames
+    testfiles
 
-  let doms = [lamdom,cpsdom,cpsdom',watdom,watdom']
+testAllResult :: String -> IO Progress
+testAllResult str = case testAll str of
+      True  -> return (Finished Pass)
+      False -> return (Finished (Fail (show (runToInts str))))
 
-  putStr $ unlines $ zipWith (++)
-    ["lambda", "cps", "closed cps", "wat", "wat from tree"] $
-    map ((": "++) . show) doms
+runToInts :: String -> [Int]
+runToInts str = map ($str) toInts
 
-  putStrLn $ "TESTS " ++ if all (==lamdom) doms then "PASSED" else error "FAILED"
+testAll :: String -> Bool
+testAll = allEq . runToInts
 
-str2wat = cps2wat . cps2cps . lam2cps . str2lam
-str2watfile str watfile = writeFile watfile $ show $ str2wat str
+toInts :: [String -> Int]
+toInts = [ str2lam2int
+         , str2cps2int
+         , str2ccps2int
+         , str2cwat2int
+         , str2twat2int
+         ]
 
-testfile = "test"
-testwatfile = "./test/" ++ testfile ++ ".wat"
-testwasmfile = "./test/" ++ testfile ++ ".wasm"
-wat2wasm = "/Users/ben/wabt/bin/wat2wasm"
-wasminterp = "/Users/ben/wabt/bin/wasm-interp"
-
-str2res :: String -> IO ()
-str2res str = do
-  str2watfile str testwatfile
-  cmd_ wat2wasm [testwatfile, "--output=" ++ testwasmfile]
-  cmd_ wasminterp [testwasmfile, "--run-all-exports"]
+allEq :: Eq a => [a] -> Bool
+allEq []     = True
+allEq (x:xs) = go xs
+  where go []     = True
+        go (y:xs) = if x == y then go xs else False
+        

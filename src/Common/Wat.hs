@@ -30,6 +30,9 @@ type M = StateT Heap (ReaderT Env Maybe)
 frameSize :: Int
 frameSize = 64 * 1024 -- 64 KB
 
+wat2int :: Wat -> Int
+wat2int = wat2dom
+
 wat2dom :: Wat -> Dom
 wat2dom =
   fst .

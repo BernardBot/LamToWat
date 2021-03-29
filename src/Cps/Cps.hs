@@ -31,6 +31,9 @@ instance Show Dom where
   show (Int i) = show i
   show (Fun _) = "fun"
 
+cps2int :: Cps -> Int
+cps2int cps = case cps2dom cps of Int i -> i
+
 cps2dom :: Cps -> Dom
 cps2dom = fromJust . flip runReaderT [] . c2d
   

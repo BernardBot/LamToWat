@@ -12,6 +12,7 @@ import Data.Maybe
 
 import Control.Monad
 
+hClos :: Tps (Fix :+: Base :+: cmd) Val -> Tps (Record :+: Fix :+: Base :+: cmd) Val
 hClos = hClos' []
 
 hClos' :: [String] -> Tps (Fix :+: Base :+: cmd) Val -> Tps (Record :+: Fix :+: Base :+: cmd) Val

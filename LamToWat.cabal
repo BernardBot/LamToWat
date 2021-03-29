@@ -8,7 +8,8 @@ extra-source-files:  README.md
 
 executable lam2wat
   main-is:             ./src/Main.hs
-  other-modules:
+  other-modules:       Run
+
                        Val
                        Lam
                        Wat
@@ -27,11 +28,12 @@ executable lam2wat
                        Tps2Tps
                        Tps2Wat
 
-  build-depends:       base >=4.13 && <4.14,
+  build-depends:       Cabal >= 3.0.1.0,
+                       base >=4.13 && <4.14,
+                       directory >= 1.3.6.0,
                        megaparsec >= 9.0.1,
                        mtl >= 2.2.2,
                        parser-combinators >= 1.3.0,
-                       directory >= 1.3.6.0,
                        shake >= 0.19.4
 
   hs-source-dirs:      .
@@ -43,9 +45,11 @@ executable lam2wat
   default-language:    Haskell2010  
 
 test-suite lam2test
-  type:                exitcode-stdio-1.0           
-  main-is:             ./test/Test.hs
-  other-modules:       Val
+  type:                detailed-0.9
+  test-module:         Test
+  other-modules:       Run
+
+                       Val
                        Lam
                        Wat
 
@@ -63,11 +67,12 @@ test-suite lam2test
                        Tps2Tps
                        Tps2Wat
                        
-  build-depends:       base >=4.13 && <4.14,
+  build-depends:       Cabal >= 3.0.1.0,
+                       base >=4.13 && <4.14,
+                       directory >= 1.3.6.0,
                        megaparsec >= 9.0.1,
                        mtl >= 2.2.2,
                        parser-combinators >= 1.3.0,
-                       directory >= 1.3.6.0,
                        shake >= 0.19.4
 
   hs-source-dirs:      .
@@ -75,6 +80,7 @@ test-suite lam2test
                        src/Tps
                        src/Cps
                        src/Common
+                       test
 
   default-language:    Haskell2010
 

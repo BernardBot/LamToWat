@@ -30,6 +30,9 @@ instance Show Dom where
   show (INT i) = show i
   show (FUN _) = "fun"
 
+lam2int :: Lam -> Int
+lam2int lam = case lam2dom lam of INT i -> i
+
 lam2dom :: Lam -> Dom
 lam2dom = fromJust . flip runReaderT [] . l2d
 
