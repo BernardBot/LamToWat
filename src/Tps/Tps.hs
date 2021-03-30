@@ -19,9 +19,9 @@ import Data.Void
 
 data Tps sig a where
   Leaf :: a -> Tps sig a
-  Node :: sig n b c
+  Node :: sig n b
        -> Vec n (Tps sig Val)
-       -> Option b (Option c String, Tps sig a)
+       -> Option b (String, Tps sig a)
        -> Tps sig a
 
 instance Monad (Tps sig) where
@@ -37,30 +37,30 @@ instance Applicative (Tps sig) where
 
 liftT op ps x k = Node op ps (Some (x, k))
 
-liftF :: sig n False c -> Vec n (Tps sig Val) -> Tps sig a
+liftF :: sig n False -> Vec n (Tps sig Val) -> Tps sig a
 liftF op ps = Node op ps None
 
 ------------------
 -- CPS Commands --
 ------------------
 
-type Sig = Nat -> Bool -> Bool -> *
+type Sig = Nat -> Bool -> *
 
 data Base :: Sig where
-  App :: Val -> [Val] -> Base Z False False
-  Add :: Val -> Val ->   Base Z True  True
+  App :: Val -> [Val] -> Base Z False
+  Add :: Val -> Val ->   Base Z True 
 
 data Record :: Sig where
-  Record :: [Val] ->      Record Z True True
-  Select :: Int -> Val -> Record Z True True
+  Record :: [Val] ->      Record Z True
+  Select :: Int -> Val -> Record Z True
 
 data Fix :: Sig where
-  Fix :: Vec n (String,[String]) -> Fix n True False
+  Fix :: Vec n (String,[String]) -> Fix n True
 
 data Malloc :: Sig where
-  Malloc :: Int ->               Malloc Z True True
-  Load   :: Int -> Val ->        Malloc Z True True
-  Store  :: Int -> Val -> Val -> Malloc Z True False
+  Malloc :: Int ->               Malloc Z True
+  Load   :: Int -> Val ->        Malloc Z True
+  Store  :: Int -> Val -> Val -> Malloc Z True
 
 data VoidCmd :: Sig where
 
@@ -69,13 +69,13 @@ data VoidCmd :: Sig where
 ----------------------------
 
 data (:+:) :: Sig -> Sig -> Sig where
-  L :: sigl n b c -> (sigl :+: sigr) n b c
-  R :: sigr n b c -> (sigl :+: sigr) n b c
+  L :: sigl n b -> (sigl :+: sigr) n b
+  R :: sigr n b -> (sigl :+: sigr) n b
 infixr 7 :+:
 
 infixr 6 :<:
 class (sub :: Sig) :<: (sup :: Sig) where
-  inj :: sub n b c -> sup n b c
+  inj :: sub n b -> sup n b
 
 instance a :<: a where
   inj = id
@@ -92,37 +92,37 @@ instance {-# OVERLAPPABLE #-} a :<: c => a :<: b :+: c where
 done = Leaf
 app v vs = liftF (inj (App v vs)) Nil
 
-add v1 v2 x k = liftT (inj (Add v1 v2)) Nil (Some x) k
+add v1 v2 x k = liftT (inj (Add v1 v2)) Nil x k
 add_ v1 v2 x = add v1 v2 x (Leaf ())
 
-record vs x k = liftT (inj (Record vs)) Nil (Some x) k
+record vs x k = liftT (inj (Record vs)) Nil x k
 record_ vs x = record vs x (Leaf ())
 
-select i v x k = liftT (inj (Select i v)) Nil (Some x) k
+select i v x k = liftT (inj (Select i v)) Nil x k
 select_ i v x = select i v x (Leaf ())
 
-fix fxs bs k = liftT (inj (Fix fxs)) bs None k
+fix fxs bs k = liftT (inj (Fix fxs)) bs "" k
 fix_ fxs bs = fix fxs bs (Leaf ())
 
-malloc i x k = liftT (inj (Malloc i)) Nil (Some x) k
+malloc i x k = liftT (inj (Malloc i)) Nil x k
 malloc_ i x = malloc i x (Leaf ())
 
-load i v x k = liftT (inj (Load i v)) Nil (Some x) k
+load i v x k = liftT (inj (Load i v)) Nil x k
 load_ i v x = load i v x (Leaf ())
 
-store i s t k = liftT (inj (Store i s t)) Nil None k
+store i s t k = liftT (inj (Store i s t)) Nil "" k
 store_ i s t = store i s t (Leaf ())
 
 ----------------------
 -- Helper Functions --
 ----------------------
 
-liftSigF :: (forall n b c. sig n b c -> sig' n b c) -> Tps sig Val -> Tps sig' Val
+liftSigF :: (forall n b. sig n b -> sig' n b) -> Tps sig Val -> Tps sig' Val
 liftSigF f tree = go tree
   where go (Leaf v) = Leaf v
         go (Node cmd ks k) = Node (f cmd) (fmap go ks) (fmap (fmap go) k)
                        
-swap' :: (f :+: g :+: h) n b c -> (g :+: f :+: h) n b c
+swap' :: (f :+: g :+: h) n b -> (g :+: f :+: h) n b
 swap' (L a)     = R (L a)
 swap' (R (L a)) = L a
 swap' (R (R a)) = R (R a)
