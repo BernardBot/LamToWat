@@ -15,8 +15,6 @@ import Vec
 
 import Control.Monad
 
-import Data.Void
-
 data Tps sig a where
   Leaf :: a -> Tps sig a
   Node :: sig n b
@@ -36,8 +34,6 @@ instance Applicative (Tps sig) where
   (<*>) = ap
 
 liftT op ps x k = Node op ps (Some (x, k))
-
-liftF :: sig n False -> Vec n (Tps sig Val) -> Tps sig a
 liftF op ps = Node op ps None
 
 ------------------
@@ -64,9 +60,9 @@ data Malloc :: Sig where
 
 data VoidCmd :: Sig where
 
-----------------------------
--- Injection / Projection --
-----------------------------
+---------------
+-- Injection --
+---------------
 
 data (:+:) :: Sig -> Sig -> Sig where
   L :: sigl n b -> (sigl :+: sigr) n b
@@ -101,8 +97,20 @@ record_ vs x = record vs x (Leaf ())
 select i v x k = liftT (inj (Select i v)) Nil x k
 select_ i v x = select i v x (Leaf ())
 
-fix fxs bs k = liftT (inj (Fix fxs)) bs "" k
-fix_ fxs bs = fix fxs bs (Leaf ())
+data VPair a b n = VPair { getVPair :: (Vec n a, Vec n b) }
+
+fix fs k =
+  let VPair (fxs, bs) =
+        ifoldV (VPair (Nil, Nil))
+               (\ (f, xs, b) (VPair (fxs, bs)) ->
+                  VPair ((f, xs) ::: fxs, b ::: bs))
+               fs
+  in liftT (inj (Fix fxs)) bs "" k
+
+fix_ fs = fix fs (Leaf ())
+
+fix' fxs bs k = liftT (inj (Fix fxs)) bs "" k
+fix'_ fxs bs = fix' fxs bs (Leaf ())
 
 malloc i x k = liftT (inj (Malloc i)) Nil x k
 malloc_ i x = malloc i x (Leaf ())
@@ -129,3 +137,49 @@ swap' (R (R a)) = R (R a)
 
 swap :: Tps (f :+: g :+: h) Val -> Tps (g :+: f :+: h) Val
 swap = liftSigF swap'
+
+merge' :: (f :+: f :+: g) n b -> (f :+: g) n b
+merge' (L a)     = L a
+merge' (R (L a)) = L a
+merge' (R (R a)) = R a
+
+merge :: Tps (f :+: f :+: g) Val -> Tps (f :+: g) Val
+merge = liftSigF merge'
+
+---------------------
+-- Pretty-Printing --
+---------------------
+
+-- TODO
+
+data Print :: Sig where
+  Print :: String -> Print Z True
+
+pBase :: Tps (Base :+: cmd) a -> Tps (Base :+: cmd) a
+pBase = undefined
+
+pRecord :: Tps (Record :+: cmd) a -> Tps (Print :+: cmd) a
+pRecord = undefined
+
+pFix :: Tps (Fix :+: cmd) a -> Tps (Print :+: cmd) a -- do it last?
+pFix = undefined
+
+pMalloc :: Tps (Malloc :+: cmd) a -> Tps (Print :+: cmd) a
+pMalloc = undefined
+
+instance Show a => Show (Tps (Print :+: VoidCmd) a) where
+  show (Leaf a) = show a
+  show (Node (L (Print s)) Nil (Some (_,k))) = s ++ show k
+
+e = 
+    Node (L (Fix (("f", ["x"]) ::: Nil)))
+    ((Node (R (Add (VAR "x") (INT 1))) Nil (Some ("x", Leaf (VAR "x")))) ::: Nil) (Some ("",
+    Node (R (App (VAR "f") [INT 41])) Nil None))
+
+e' :: Tps (Fix :+: Base) Val
+e' = do
+  fix_ (("f",["x"],do
+        add_ (VAR "x") (INT 1) "n"
+        done (VAR "n"))
+        ::: Nil)
+  app (VAR "f") [INT 41]

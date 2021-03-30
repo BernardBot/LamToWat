@@ -40,7 +40,7 @@ t2t (Node (T.App v vs) Nil None) =
 t2t (Node (T.Fix fxs) bs (Some k)) = do
   bs' <- mapM (\ b -> t2t (b ())) bs
   k' <- t2t (k ())
-  return (fix fxs bs' k')
+  return (fix' fxs bs' k')
 t2t (Node (T.SetK x v) Nil (Some k)) =
   local ((x,v):) (t2t (k ()))
 t2t (Node (T.GetK x) Nil (Some k)) = do
@@ -53,7 +53,7 @@ t2t (Node T.Block (b ::: Nil) (Some k)) = do
   x <- fresh "x"
   b' <- local (("_nxt",LABEL r):) (t2t (do v <- b (); T.app (LABEL r) [v]))
   k' <- t2t (k (VAR x))
-  return (fix ((r,[x]) ::: Nil) (k' ::: Nil) b')
+  return (fix' ((r,[x]) ::: Nil) (k' ::: Nil) b')
 t2t (Node (T.Fresh x) Nil (Some k)) = do
   f <- fresh x
   t2t (k f)

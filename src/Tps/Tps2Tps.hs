@@ -25,7 +25,7 @@ hClos' nv (Node (L (Fix fxs)) bs (Some (_,k))) = do
                                     then return ()
                                     else select_ i (VAR "_nv") x) [0..] nv
                        hClos' (nv ++ as) b) fxs bs
-  fix fxs' bs' (hClos' nv k)
+  fix' fxs' bs' (hClos' nv k)
 
 hClos' nv (Node (R (L (App v vs))) Nil None) = do
   record_ (map VAR nv) "_nv"
@@ -46,8 +46,7 @@ hClos' nv (Node (R (L (App v vs))) Nil None) = do
       app (VAR fp) (v:vs')
 hClos' nv (Leaf v) = Leaf v
 hClos' nv (Node cmd ks k) =
-  Node (R cmd) (fmap (hClos' nv) ks)
-    (fmap (\ (x,k) -> (x, hClos' (nv ++ if null x then [] else [x]) k)) k)
+  Node (R cmd) (fmap (hClos' nv) ks) (fmap (\ (x,k) -> (x, hClos' (nv ++ if null x then [] else [x]) k)) k)
 
 hRecord :: Tps (Record :+: cmd) Val -> Tps (Malloc :+: cmd) Val
 hRecord (Node (L (Record vs)) Nil (Some (x,k))) = do
@@ -59,12 +58,12 @@ hRecord (Node (L (Select i v)) Nil (Some (x,k))) =
 hRecord (Leaf v) = Leaf v
 hRecord (Node (R cmd) ks k) = Node (R cmd) (fmap hRecord ks) (fmap (fmap hRecord) k)
 
-hFun :: Tps (Fix :+: cmd) Val -> ([(String,[String],Tps cmd Val)],Tps cmd Val)
-hFun (Leaf v) = ([],Leaf v)
-hFun (Node (R cmd) ks k) = case fmap (fmap hFun) k of
+hFix :: Tps (Fix :+: cmd) Val -> ([(String,[String],Tps cmd Val)],Tps cmd Val)
+hFix (Leaf v) = ([],Leaf v)
+hFix (Node (R cmd) ks k) = case fmap (fmap hFix) k of
   Some (x,(fs,k')) -> (fs++fs',Node cmd ks' (Some (x,k')))
   None             -> (    fs',Node cmd ks' None)
-  where ks' = fmap (snd . hFun) ks
-        fs' = concat (toList (fmap (fst . hFun) ks))
-hFun (Node (L (Fix fxs)) bs (Some ("", k))) = let (fs,k') = hFun k in (fs'++fs,k')
-  where fs' = concatMap (\ ((f,as),b) -> let (fs,b') = hFun b in (f,as,b') : fs) (zip (toList fxs) (toList bs))
+  where ks' = fmap (snd . hFix) ks
+        fs' = concat (toList (fmap (fst . hFix) ks))
+hFix (Node (L (Fix fxs)) bs (Some ("", k))) = let (fs,k') = hFix k in (fs'++fs,k')
+  where fs' = concatMap (\ ((f,as),b) -> let (fs,b') = hFix b in (f,as,b') : fs) (zip (toList fxs) (toList bs))
