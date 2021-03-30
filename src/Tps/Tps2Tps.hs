@@ -47,7 +47,7 @@ hClos' nv (Node (R (L (App v vs))) Nil None) = do
 hClos' nv (Leaf v) = Leaf v
 hClos' nv (Node cmd ks k) =
   Node (R cmd) (fmap (hClos' nv) ks)
-    (fmap (\ (x,k) -> (x, hClos' (nv ++ [x]) k)) k)
+    (fmap (\ (x,k) -> (x, hClos' (nv ++ if null x then [] else [x]) k)) k)
 
 hRecord :: Tps (Record :+: cmd) Val -> Tps (Malloc :+: cmd) Val
 hRecord (Node (L (Record vs)) Nil (Some (x,k))) = do
