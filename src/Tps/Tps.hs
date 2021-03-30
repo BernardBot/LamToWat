@@ -48,7 +48,7 @@ type Sig = Nat -> Bool -> Bool -> *
 
 data Base :: Sig where
   App :: Val -> [Val] -> Base Z False False
-  Add :: Val -> Val ->   Base Z True True
+  Add :: Val -> Val ->   Base Z True  True
 
 data Record :: Sig where
   Record :: [Val] ->      Record Z True True

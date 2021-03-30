@@ -46,8 +46,7 @@ hClos' nv (Node (R (L (App v vs))) Nil None) = do
       app (VAR fp) (v:vs')
 hClos' nv (Leaf v) = Leaf v
 hClos' nv (Node cmd ks k) =
-  Node (R cmd)
-    (mapV (\ k -> hClos' nv k) ks)
+  Node (R cmd) (fmap (hClos' nv) ks)
     (fmap (\ (o,k) -> (o,case o of
                           Some x -> hClos' (nv ++ [x]) k
                           None   -> hClos' nv          k)) k)
@@ -60,15 +59,14 @@ hRecord (Node (L (Record vs)) Nil (Some (Some x,k))) = do
 hRecord (Node (L (Select i v)) Nil (Some (Some x,k))) =
   load i v x (hRecord k)
 hRecord (Leaf v) = Leaf v
-hRecord (Node (R cmd) ks k) =
-  Node (R cmd)
-    (mapV (\ k -> hRecord k) ks)
-    (fmap (\ (o,k) -> (o,hRecord k)) k)
+hRecord (Node (R cmd) ks k) = Node (R cmd) (fmap hRecord ks) (fmap (fmap hRecord) k)
 
 hFun :: Tps (Fix :+: cmd) Val -> ([(String,[String],Tps cmd Val)],Tps cmd Val)
 hFun (Leaf v) = ([],Leaf v)
-hFun (Node (R cmd) Nil k) = case fmap (fmap hFun) k of
-  Some (x,(fs,k')) -> (fs,Node cmd Nil (Some (x,k')))
-  None             -> ([],Node cmd Nil None)
+hFun (Node (R cmd) ks k) = case fmap (fmap hFun) k of
+  Some (x,(fs,k')) -> (fs++fs',Node cmd ks' (Some (x,k')))
+  None             -> (    fs',Node cmd ks' None)
+  where ks' = fmap (snd . hFun) ks
+        fs' = concat (toList (fmap (fst . hFun) ks))
 hFun (Node (L (Fix fxs)) bs (Some (None, k))) = let (fs,k') = hFun k in (fs'++fs,k')
   where fs' = concatMap (\ ((f,as),b) -> let (fs,b') = hFun b in (f,as,b') : fs) (zip (toList fxs) (toList bs))
