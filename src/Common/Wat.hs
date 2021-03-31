@@ -101,9 +101,8 @@ lv (Load _ _ x e) = x : lv e
 lv (Store _ _ _ e) = lv e
 lv e = []
 
-instance Show Val where
-  show (VAR x) = "(local.get $" ++ x ++ ")"
-  show (INT i) = "(i32.const " ++ show i ++ ")"
+pprint (VAR x) = "(local.get $" ++ x ++ ")"
+pprint (INT i) = "(i32.const " ++ show i ++ ")"
 
 instance Show Wat where
   show (Module fs e) =
@@ -131,14 +130,14 @@ func (f,as,b) =
         ls = nub (lv b) \\ as
 
 instance Show Exp where
-  show (Done v) = show v
-  show (App v vs) = "(call_indirect (type $" ++ _t ++ show (length vs) ++ ") " ++ sp vs ++ " " ++ show v ++ ")"
-  show (Add v1 v2 x e) = "(local.set $" ++ x ++ " (i32.add " ++ show v1 ++ " " ++ show v2 ++"))\n" ++ show e
+  show (Done v) = pprint v
+  show (App v vs) = "(call_indirect (type $" ++ _t ++ show (length vs) ++ ") " ++ sp vs ++ " " ++ pprint v ++ ")"
+  show (Add v1 v2 x e) = "(local.set $" ++ x ++ " (i32.add " ++ pprint v1 ++ " " ++ pprint v2 ++"))\n" ++ show e
   show (Malloc i x e) = "(local.set $" ++ x ++ " (global.get $" ++ _p ++ "))\n" ++
     "(global.set $" ++ _p ++ " (i32.add (global.get $" ++ _p ++ ") (i32.const " ++ show (intSize * i) ++ ")))\n" ++
     show e
-  show (Load i v x e) = "(local.set $" ++ x ++ " (i32.load offset=" ++ show (intSize * i) ++ " " ++ show v ++ "))\n" ++ show e
-  show (Store i s t e) = "(i32.store offset=" ++ show (intSize * i) ++ " " ++ show s ++ " " ++ show t ++ ")\n" ++ show e
+  show (Load i v x e) = "(local.set $" ++ x ++ " (i32.load offset=" ++ show (intSize * i) ++ " " ++ pprint v ++ "))\n" ++ show e
+  show (Store i s t e) = "(i32.store offset=" ++ show (intSize * i) ++ " " ++ pprint s ++ " " ++ pprint t ++ ")\n" ++ show e
 
 
 e = Module 

@@ -68,11 +68,6 @@ v2d (LABEL x) = ReaderT (lookup x)
 -- Pretty Printing --
 ---------------------
 
-instance Show Val where
-  show (VAR x) = x
-  show (LABEL x) = x
-  show (INT i) = show i
-
 tab = "  "
 indent = unlines . map (tab++) . lines
 assign x y = x ++ " = " ++ y ++ "\n"

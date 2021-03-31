@@ -83,11 +83,6 @@ fresh v = liftT (Fresh v) Nil
 --- show instance ---
 ---------------------
 
-instance Show Val where
-  show (INT i) = show i
-  show (VAR x) = x
-  show (LABEL x) = x
-
 instance Show (Cmd n b p r q) where
   show (Add v1 v2) = "(Add " ++ show v1 ++ " " ++ show v2 ++ ")"
   show (App v vs)  = "(App " ++ show v ++ " " ++ show vs ++ ")"
