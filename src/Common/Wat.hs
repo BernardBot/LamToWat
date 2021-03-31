@@ -116,7 +116,7 @@ instance Show Wat where
     funcs ++ ")"
     where names = map (\ (f,_,_) -> f) fs
           funcs = concatMap func ((_start,[],e):fs)
-          lengths = sort (nub (map (\ (_,as,_) -> length as) fs))
+          lengths = sort (nub (2 : (map (\ (_,as,_) -> length as) fs)))
           types = concatMap typedef lengths
 
 typedef len = "(type $" ++ _t ++ show len ++ " (func " ++ spaced (replicate len "(param i32)") ++ " (result i32)))\n"
