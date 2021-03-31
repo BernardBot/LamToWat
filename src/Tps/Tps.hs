@@ -176,52 +176,56 @@ indent = unlines . map (tab++) . lines
 assign x y = x ++ " = " ++ y ++ "\n"
 args ss = "(" ++ intercalate "," ss ++ ")"
 
+instance Show (Base n b) where
+  show (App v vs) = show v ++ args (map show vs)
+  show (Add v1 v2) = show v1 ++ " + " ++ show v2
+
+instance Show (Record n b) where
+  show (Record vs) = show vs
+  show (Select i v) = show v ++ "[" ++ show i ++ "]"
+
+instance Show (Malloc n b) where
+  show (Malloc i) = "malloc " ++ show i
+  show (Load i v) = "load " ++ show i ++ " " ++ show v
+  show (Store i s t) = "store " ++ show i ++ " " ++ show s ++ " " ++ show t
+
 data Print :: Sig where
-  Print :: String -> Print Z True
-  PrintWith :: (Vec n String -> String) -> Print n True
-  Done :: String -> Print Z False
+  Print :: (Vec n String -> String) -> Print n b
 
 class Printable (f :: Sig) where
-  pCmd :: f n b -> String -> Print n b
+  pCmd :: f n b -> Print n b
 
-  pCmdT :: Tps f a -> Tps Print a
-  pCmdT (Leaf a) = Leaf a
-  pCmdT (Node cmd ks (Some (x,k))) = Node (pCmd cmd x)  (fmap pCmdT ks) (Some (x,pCmdT k))
-  pCmdT (Node cmd ks None)         = Node (pCmd cmd "") (fmap pCmdT ks) None
+  pTps :: Tps f a -> Tps Print a
+  pTps (Leaf a) = Leaf a
+  pTps (Node cmd ks k) = Node (pCmd cmd) (fmap pTps ks) (fmap (fmap pTps) k)
 
-  pCmdT' :: Tps (f :+: cmd) a -> Tps (Print :+: cmd) a
-  pCmdT' (Leaf a) = Leaf a
-  pCmdT' (Node (L cmd) ks (Some (x,k))) = Node (L $ pCmd cmd x)  (fmap pCmdT' ks) (Some (x,pCmdT' k))
-  pCmdT' (Node (L cmd) ks None)         = Node (L $ pCmd cmd "") (fmap pCmdT' ks) None
-  pCmdT' (Node (R cmd) ks k)            = Node (R cmd)           (fmap pCmdT' ks) (fmap (fmap pCmdT') k)
+  pTps' :: Tps (f :+: cmd) a -> Tps (Print :+: cmd) a
+  pTps' (Leaf a) = Leaf a
+  pTps' (Node (L cmd) ks k) = Node (L $ pCmd cmd) (fmap pTps' ks) (fmap (fmap pTps') k)
+  pTps' (Node (R cmd) ks k) = Node (R cmd)        (fmap pTps' ks) (fmap (fmap pTps') k)
 
 instance Printable Base where
-  pCmd (App v vs) x = Done $ show v ++ args (map show vs)
-  pCmd (Add v1 v2) x = Print $ assign x (show v1 ++ " + " ++ show v2)
-
+  pCmd cmd = Print $ const $ show cmd
 instance Printable Record where
-  pCmd (Record vs) x = Print $ assign x (show vs)
-  pCmd (Select i v) x = Print $ assign x (show v ++ "[" ++ show i ++ "]")
-
-instance Printable Fix where
-  pCmd (Fix fxs) x = PrintWith $ \ bs -> concatMap (\ ((f,as),b) -> "def " ++ f ++ args as ++ ":\n" ++ indent b) (zip (toList fxs) (toList bs))
-
+  pCmd cmd = Print $ const $ show cmd
 instance Printable Malloc where
-  pCmd (Malloc i) x = Print $ assign x ("malloc " ++ show i)
-  pCmd (Load i v) x = Print $ assign x ("load " ++ show i ++ " " ++ show v)
-  pCmd (Store i s t) _ = Print $ "store " ++ show i ++ " " ++ show s ++ " " ++ show t ++ "\n"
+  pCmd cmd = Print $ const $ show cmd
+instance Printable Fix where
+  pCmd (Fix Nil) = Print $ \ Nil -> "def:"
+  pCmd (Fix fxs) = Print $ \ bs ->
+    init $ concat $ toList $ zipWithV (\ (f,as) b -> "def " ++ f ++ args as ++ ":\n" ++ indent b) fxs bs
 
 instance {-# OVERLAPPING #-} Show a => Show (Tps Print a) where
   show (Leaf a) = "return " ++ show a
-  show (Node (PrintWith f) ks  (Some (_,k))) = f (fmap show ks) ++ show k
-  show (Node (Print s)     Nil (Some (_,k))) = s ++ show k
-  show (Node (Done s)      Nil None)         = s
-
-instance (Show a, Printable f) => Show (Tps f a) where show = show . pCmdT
-instance {-# OVERLAPPING #-} (Show a, Printable f) => Show (Tps (Print :+: f) a) where show = show . morge . pCmdT' . swop
-instance {-# OVERLAPPING #-} Show a => Show (Tps (Print :+: VoidCmd) a) where show = show . dropVoid
-instance {-# OVERLAPPING #-} (Show (Tps (Print :+: cmd) a), Printable f) => Show (Tps (          f :+: cmd) a) where show = show . pCmdT'
-instance {-# OVERLAPPING #-} (Show (Tps (Print :+: cmd) a), Printable f) => Show (Tps (Print :+: f :+: cmd) a) where show = show . merge . pCmdT' . swap
+  show (Node (Print f) ks k) = let s = f (mapV show ks) in case k of
+    Some ("",k) -> s          ++ "\n" ++ show k
+    Some (x ,k) -> assign x s ++         show k
+    None        -> s
+instance                     (Show a, Printable f)                       => Show (Tps f                     a) where show = show . pTps
+instance {-# OVERLAPPING #-} (Show a, Printable f)                       => Show (Tps (Print :+: f)         a) where show = show . morge . pTps' . swop
+instance {-# OVERLAPPING #-} Show a                                      => Show (Tps (Print :+: VoidCmd)   a) where show = show . dropVoid
+instance {-# OVERLAPPING #-} (Show (Tps (Print :+: cmd) a), Printable f) => Show (Tps (f :+: cmd)           a) where show = show . pTps'
+instance {-# OVERLAPPING #-} (Show (Tps (Print :+: cmd) a), Printable f) => Show (Tps (Print :+: f :+: cmd) a) where show = show . merge . pTps' . swap
 
 e :: Tps (Fix :+: Base) a
 e = 
@@ -237,3 +241,6 @@ e' = do
         ::: Nil)
   malloc_ 0 "x"
   app (VAR "f") [INT 41]
+
+e'' :: Tps Fix ()
+e'' = fix_ Nil
