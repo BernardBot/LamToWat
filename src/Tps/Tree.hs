@@ -6,6 +6,7 @@
 module Tree where
 
 import Control.Monad
+import Control.Monad.State
 import Data.Void
 
 import Vec
@@ -96,34 +97,43 @@ instance Show (Cmd n b p r q) where
 --- show instance for command trees ---
 ---------------------------------------
 
-pprint :: Show a => Tree Cmd a -> Int -> String
-pprint (Leaf x) _ = show x
-pprint (Node op@(Add _ _) Nil (Some k)) i =
-  let x = "x" ++ show i
-  in show op ++ " (λ " ++ x ++ " → " ++ pprint (k (VAR x)) (i + 1) ++ ")"
-pprint (Node op@(App _ _) Nil None) _ =
-  show op
-pprint (Node op@(Fix _) ks (Some k)) i =
-  show op ++ " [" ++
-  foldr (\ k1 s -> (pprint (k1 ()) (i + 1)) ++ "; " ++ s) "" ks ++ "] " ++
-  pprint (k ()) (i + 1)
-pprint (Node op@(GetK _) Nil (Some k)) i =
-  let x = "x" ++ show i
-  in show op ++ " (λ " ++ x ++ " → " ++
-     pprint (k (VAR x)) (i + 1) ++ ")"
-pprint (Node op@(SetK _ _) Nil (Some k)) i =
-  let x = "x" ++ show i
-  in show op ++ " (λ " ++ x ++ " → " ++
-     pprint (k ()) (i + 1) ++ ")"
-pprint (Node op@Block (k0 ::: Nil) (Some k)) i =
-  let x        = "x" ++ show i
-  in show op ++ " [" ++
-     pprint (k0 ()) (i + 1) ++ "] (λ " ++ x ++ " → " ++ 
-     pprint (k (VAR x)) (i + 1) ++ ")"
-pprint (Node op@(Fresh _) Nil (Some k)) i =
-  let x = "x" ++ show i
-  in show op ++ " (λ " ++ x ++ " → " ++
-     pprint (k x) (i + 1) ++ ")"
-
 instance Show (Tree Cmd Val) where
-  show t = pprint t 0
+  show = fst . flip runState 0 . go
+    where go :: Tree Cmd Val -> State Int String
+          go (Leaf v) = return $ show v
+          go (Node op@(Add _ _) Nil (Some k)) = do
+            x <- fresh "x"
+            k' <- go (k (VAR x))
+            return $ show op ++ " (λ " ++ x ++ " → " ++ k' ++ ")"
+          go (Node op@(App _ _) Nil None) = return $ show op
+          go (Node op@(Fix _) ks (Some k)) = do
+            ks' <- mapM (go . ($())) ks
+            k' <- go (k ())
+            return $ show op ++ " [" ++
+              foldr (\ k s -> k ++ "; " ++ s) "" ks' ++ "] " ++
+              k'
+          go (Node op@(GetK _) Nil (Some k)) = do
+            x <- fresh "x"
+            k' <- go (k (VAR x))
+            return $ show op ++ " (λ " ++ x ++ " → " ++ k' ++ ")"
+          go (Node op@(SetK _ _) Nil (Some k)) = do
+            x <- fresh "x"
+            k' <- go (k ())
+            return $ show op ++ " (λ " ++ x ++ " → " ++ k' ++ ")"
+          go (Node op@Block (k0 ::: Nil) (Some k)) = do
+            x <- fresh "x"
+            k0' <- go (k0 ())
+            k' <- go (k (VAR x))
+            return $ show op ++ " [" ++
+              k0' ++ "] (λ " ++ x ++ " → "
+              ++ k' ++ ")"
+          go (Node op@(Fresh y) Nil (Some k)) = do
+            x <- fresh y
+            k' <- go (k x)
+            return $ show op ++ " (λ " ++ x ++ " → " ++ k' ++ ")"
+
+          fresh :: String -> State Int String
+          fresh s = do
+            i <- get
+            put (i+1)
+            return $ "_" ++ s ++ show i

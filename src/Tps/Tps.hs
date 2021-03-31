@@ -63,6 +63,8 @@ data Malloc :: Sig where
 
 data VoidCmd :: Sig where
 
+-- used for converting to Wat
+type TpsWat = Tps (Malloc :+: Base :+: VoidCmd) Val
 ---------------
 -- Injection --
 ---------------
@@ -170,6 +172,9 @@ morge = liftSigF morge'
 ---------------------
 -- Pretty-Printing --
 ---------------------
+
+instance {-# OVERLAPPING #-} Show ([(String,[String],TpsWat)],TpsWat) where
+  show (fs,e) = concatMap (\ (f,as,b) -> "def " ++ f ++ args as ++ ":\n" ++ indent (show b)) fs ++ show e
 
 tab = "  "
 indent = unlines . map (tab++) . lines
