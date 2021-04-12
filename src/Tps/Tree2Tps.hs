@@ -31,29 +31,29 @@ fresh s = do
 
 t2t :: Tree Cmd Val -> M (Tps (Fix :+: Base :+: VoidCmd) Val)
 t2t (Leaf x) = return (done x)
-t2t (Node (T.Add v1 v2) Nil (Some k)) = do
+t2t (Node (T.R (T.R (T.Add v1 v2))) Nil (Some k)) = do
   x <- fresh "x"
   k' <- t2t (k (VAR x))
   return (add v1 v2 x k')
-t2t (Node (T.App v vs) Nil None) =
+t2t (Node (T.R (T.R (T.App v vs))) Nil None) =
   return (app v vs)
-t2t (Node (T.Fix fxs) bs (Some k)) = do
+t2t (Node (T.R (T.L (T.Fix fxs))) bs (Some k)) = do
   bs' <- mapM (\ b -> t2t (b ())) bs
   k' <- t2t (k ())
   return (fix' fxs bs' k')
-t2t (Node (T.SetK x v) Nil (Some k)) =
+t2t (Node (T.L (T.SetK x v)) Nil (Some k)) =
   local ((x,v):) (t2t (k ()))
-t2t (Node (T.GetK x) Nil (Some k)) = do
+t2t (Node (T.L (T.GetK x)) Nil (Some k)) = do
   nv <- ask
   case lookup x nv of
     Just v -> t2t (k v)
     Nothing -> error (x ++ " is not in env " ++ show nv)
-t2t (Node T.Block (b ::: Nil) (Some k)) = do
+t2t (Node (T.L T.Block) (b ::: Nil) (Some k)) = do
   r <- fresh "r"
   x <- fresh "x"
   b' <- local (("_nxt",LABEL r):) (t2t (do v <- b (); T.app (LABEL r) [v]))
   k' <- t2t (k (VAR x))
   return (fix' ((r,[x]) ::: Nil) (k' ::: Nil) b')
-t2t (Node (T.Fresh x) Nil (Some k)) = do
+t2t (Node (T.L (T.Fresh x)) Nil (Some k)) = do
   f <- fresh x
   t2t (k f)

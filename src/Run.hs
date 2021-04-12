@@ -15,7 +15,7 @@ import Cps2Cps
 import Cps2Wat
 
 import Tps
-import Tree
+import Tree hiding ((:+:),Fix,Base)
 import Lam2Tree
 import Tree2Tps
 import Tps2Tps

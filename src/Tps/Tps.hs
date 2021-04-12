@@ -75,7 +75,7 @@ data (:+:) :: Sig -> Sig -> Sig where
 infixr 7 :+:
 
 infixr 6 :<:
-class (sub :: Sig) :<: (sup :: Sig) where
+class (:<:) (sub :: Sig) (sup :: Sig) where
   inj :: sub n b -> sup n b
 
 instance a :<: a where
@@ -235,7 +235,7 @@ instance {-# OVERLAPPING #-} (Show (Tps (Print :+: cmd) a), Printable f) => Show
 e :: Tps (Fix :+: Base) a
 e = 
     Node (L (Fix (("f", ["x"]) ::: Nil)))
-    ((Node (R (Add (VAR "x") (INT 1))) Nil (Some ("x", Leaf (VAR "x")))) ::: Nil) (Some ("",
+    ((Node (R (Add (VAR "x") (INT 1))) Nil (Some ("n", Leaf (VAR "n")))) ::: Nil) (Some ("",
     Node (R (App (VAR "f") [INT 41])) Nil None))
 
 e' :: Tps (Malloc :+: Fix :+: Base :+: VoidCmd) Val
