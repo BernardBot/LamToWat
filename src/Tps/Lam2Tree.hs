@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeOperators #-}
+
 module Lam2Tree where
 
 import Val
@@ -5,7 +7,7 @@ import Lam hiding (INT)
 import Tree hiding (App,Add)
 import Vec
 
-lam2tree :: Lam -> Tree Cmd Val
+lam2tree :: Lam -> Tree (Comp :+: Fix :+: Base) Val
 lam2tree (Var x) = return (VAR x)
 lam2tree (Num i) = return (INT i)
 lam2tree (Lam x e) = do

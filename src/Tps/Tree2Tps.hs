@@ -29,7 +29,7 @@ fresh s = do
   put (i+1)
   return $ "_" ++ s ++ show i
 
-t2t :: Tree Cmd Val -> M (Tps (Fix :+: Base :+: VoidCmd) Val)
+t2t :: Tree (T.Comp T.:+: T.Fix T.:+: T.Base) Val -> M (Tps (Fix :+: Base :+: VoidCmd) Val)
 t2t (Leaf x) = return (done x)
 t2t (Node (T.R (T.R (T.Add v1 v2))) Nil (Some k)) = do
   x <- fresh "x"
