@@ -13,10 +13,10 @@ interp (fs,e) = interpExp e
         interpExp (Malloc i x e) = do
           p <- malloc i
           letin x (Int p) (interpExp e)
-        interpExp (Store j s t e) = do
-          Int i <- interpV s
+        interpExp (Store i s t e) = do
+          Int j <- interpV s
           d     <- interpV t
-          store i d
+          store (i+j)xo d
           interpExp e
         interpExp (Load i v x e) = do
           Int j <- interpV v

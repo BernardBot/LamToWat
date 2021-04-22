@@ -25,6 +25,8 @@ type Parser a = ParsecT StreamP UserStateP MonadP a
 -----------------
 
 type Var = String
+type Fun e = (Var,[Var],e)
+type Fix e = ([Fun e],e)
 
 data Val
   = INT Int
@@ -41,9 +43,6 @@ interpV :: Val -> IDom
 interpV (INT i) = int i
 interpV (VAR x) = look x
 interpV (LABEL x) = look x
-
-type Fun e = (Var,[Var],e)
-type Fix e = ([Fun e],e)
 
 -----------------
 -- Interpreter --
@@ -86,7 +85,7 @@ heap0 = (0,replicate frameSize (Int 0))
 runInterp :: IDom -> Dom
 runInterp =
   fst .
-  fromJust .
+  fromJust . -- Error handling?
   flip runReaderT env0 .
   flip runStateT heap0
 
@@ -112,7 +111,7 @@ look x = do
   case lookup x nv of
     Just d -> return d
     Nothing ->
-      error $ "undefined variable " ++ x ++ " in environment: " ++ show nv
+      error $ "undefined variable " ++ show x ++ " in environment: " ++ show nv
     
 clos :: Env -> [Var] -> IDom -> Dom
 clos nv xs body = Fun $ \ ds -> local (const $ zip xs ds ++ nv) body
