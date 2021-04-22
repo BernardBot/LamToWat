@@ -12,9 +12,10 @@ import Control.Monad
 import Control.Monad.State
 import Data.Void
 
+import Types hiding (fix,Fix)
+
 import Vec
 import Option
-import Val
 
 data Tree sig a where
   Leaf :: a -> Tree sig a

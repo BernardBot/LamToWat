@@ -8,13 +8,19 @@ extra-source-files:  README.md
 
 executable lam2wat
   main-is:             ./src/Main.hs
-  other-modules:       Run
+  other-modules:       Types
+                       Run
 
-                       Val
                        Lam
+                       Interpreter
+                       Parser
+                       Lexer
+
                        Wat
+                       Interpreter
 
                        Cps
+                       Interpreter
                        Lam2Cps
                        Cps2Cps
                        Cps2Wat
@@ -31,16 +37,19 @@ executable lam2wat
   build-depends:       Cabal >= 3.0.1.0,
                        base >=4.13,
                        directory >= 1.3.6.0,
+                       indents >= 0.5.0.1,
                        megaparsec >= 9.0.1,
                        mtl >= 2.2.2,
+                       parsec >= 3.1.14.0,
                        parser-combinators >= 1.3.0,
                        shake >= 0.19.4
 
   hs-source-dirs:      .
                        src
+                       src/Lam
+                       src/Wat
                        src/Tps
                        src/Cps
-                       src/Common
 
   default-language:    Haskell2010  
 
@@ -70,8 +79,10 @@ test-suite lam2test
   build-depends:       Cabal >= 3.0.1.0,
                        base >=4.13,
                        directory >= 1.3.6.0,
+                       indents >= 0.5.0.1,
                        megaparsec >= 9.0.1,
                        mtl >= 2.2.2,
+                       parsec >= 3.1.14.0,
                        parser-combinators >= 1.3.0,
                        shake >= 0.19.4
 

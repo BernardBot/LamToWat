@@ -10,7 +10,7 @@
 
 module Tps where
 
-import Val
+import Types hiding (fix,Fix,record,Record,malloc,load,store)
 import Option
 import Vec
 
@@ -169,17 +169,13 @@ morge' (L a) = a
 morge' (R a) = a
 
 morge = liftSigF morge'
+
 ---------------------
 -- Pretty-Printing --
 ---------------------
 
 instance {-# OVERLAPPING #-} Show ([(String,[String],TpsWat)],TpsWat) where
   show (fs,e) = concatMap (\ (f,as,b) -> "def " ++ f ++ args as ++ ":\n" ++ indent (show b)) fs ++ show e
-
-tab = "  "
-indent = unlines . map (tab++) . lines
-assign x y = x ++ " = " ++ y ++ "\n"
-args ss = "(" ++ intercalate "," ss ++ ")"
 
 instance Show (Base n b) where
   show (App v vs) = show v ++ args (map show vs)

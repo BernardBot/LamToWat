@@ -1,14 +1,14 @@
 module Cps2Cps where
 
-import Val
-import Cps hiding (M)
+import Types
+import Cps.Syntax
 
 import Control.Monad.Writer
 import Control.Monad.Reader
 
 import Data.Tuple
 
-cps2cps :: Cps -> Cps
+cps2cps :: Expr -> Expr
 cps2cps =
   uncurry FIX .
   swap .
@@ -16,9 +16,9 @@ cps2cps =
   runWriterT .
   c2c
 
-type M =  WriterT [Fun] (Reader [String])
+type M =  WriterT [Fun Expr] (Reader [String])
 
-c2c :: Cps -> M Cps
+c2c :: Expr -> M Expr
 c2c (FIX fs e) = do
   nv <- ask
   fs' <- mapM (\ (f,as,b) -> do
@@ -42,15 +42,15 @@ c2c (ADD v1 v2 x e)  = do
   e' <- local (++ [x]) (c2c e)
   return (ADD v1 v2 x e')
 
-open :: Cps -> [String] -> [String] -> Cps
+open :: Expr -> [String] -> [String] -> Expr
 open e as nv = SELECT 1 (VAR _nv) _nv
   (foldr (\ (i,x) b -> if x `elem` as then b else SELECT i (VAR _nv) x b) e (zip [0..] nv))
 
-apply :: Val -> [Val] -> Cps
+apply :: Val -> [Val] -> Expr
 apply (LABEL f) vs = APP (LABEL f) (VAR (_p f) : vs)
 apply (VAR f) vs = SELECT 0 (VAR f) (_p f) (APP (VAR (_p f)) (VAR f : vs))
 
-close :: Cps -> [Val] -> [String] -> Cps
+close :: Expr -> [Val] -> [String] -> Expr
 close e vs nv = RECORD (map VAR nv) _nv
   (foldr (\ v b -> case v of LABEL f -> RECORD [v,VAR _nv] (_p f) b; _ -> b) e vs)
 
