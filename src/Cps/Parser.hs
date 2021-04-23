@@ -29,8 +29,8 @@ table = []
 term :: Parser Expr
 term = choice
   [ try record
-  , try select
   , try add
+  , try select
   , try fix
   , try app
   , done
@@ -70,6 +70,7 @@ add = do
   x <- identifier
   reservedOp "="
   v1 <- val
+  reservedOp "+"
   v2 <- val
   e <- expr
   return $ ADD v1 v2 x e

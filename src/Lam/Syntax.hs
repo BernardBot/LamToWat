@@ -8,4 +8,4 @@ data Expr
   | Add Expr Expr
   | Var Var
   | Num Int
-  deriving Show
+  deriving (Eq,Show)
