@@ -6,39 +6,20 @@
 
 module Tree.Commands where
 
-import Data.Void
-
-import Option
-import Vec
-
 import Types (Val,Var)
 
+import Vec
+import Union
+import Commands
+
 import Tree.Syntax
-import Tree.Union
-
-data Base :: Sig where
-  Add   :: Val -> Val ->         Base Z     True  Void  Void Val
-  App   :: Val -> [Val] ->       Base Z     False Void  Void Val
-
-data Fix :: Sig where
-  Fix   :: Vec n (Var, [Var]) -> Fix  n     True  ()    Val  ()
-
-data Comp :: Sig where
-  GetK  :: String ->             Comp Z     True  Val   Val  Val
-  SetK  :: String -> Val ->      Comp Z     True  Val   Val  ()
-  Block ::                       Comp (S Z) True  ()    Val  Val
-  Fresh :: String ->             Comp Z     True  Void  Void String
-
-----------------------------
---- boilerplate liftings ---
-----------------------------
 
 add :: Base :<: sig => Val -> Val -> Tree sig Val
 add v1 v2 = liftT (inj (Add v1 v2)) Nil
 app :: Base :<: sig => Val -> [Val] -> Tree sig a
 app v vs = liftF (inj (App v vs)) Nil
 
-fix :: Fix :<: sig => Vec n (Var, [Var], Tree sig Val) -> Tree sig ()
+fix :: Fix :<: sig => Vec n (Var,[Var],Tree sig Val) -> Tree sig ()
 fix fs =
   let VPair (fxs, bs) =
         ifoldV (VPair (Nil, Nil))

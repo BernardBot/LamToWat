@@ -2,20 +2,27 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 
-module Tps2Tps where
+module Trans.Tps2Tps where
 
-import Val
-import Option
-import Vec
-import Tps
 import Data.Maybe
 
 import Control.Monad
 
+import Types (Val(INT,VAR,LABEL),Var)
+import qualified Types as T (Fix)
+
+import Option
+import Vec
+import Union
+import Commands
+
+import Tps.Syntax
+import Tps.Commands
+
 hClos :: Tps (Fix :+: Base :+: cmd) Val -> Tps (Record :+: Fix :+: Base :+: cmd) Val
 hClos = hClos' []
 
-hClos' :: [String] -> Tps (Fix :+: Base :+: cmd) Val -> Tps (Record :+: Fix :+: Base :+: cmd) Val
+hClos' :: [Var] -> Tps (Fix :+: Base :+: cmd) Val -> Tps (Record :+: Fix :+: Base :+: cmd) Val
 hClos' nv (Node (L (Fix fxs)) bs (Some (_,k))) = do
   let fxs' = mapV (\ (f,as) -> (f,"_nv":as)) fxs
       bs' = zipWithV (\ (f,as) b -> do
@@ -58,7 +65,7 @@ hRecord (Node (L (Select i v)) Nil (Some (x,k))) =
 hRecord (Leaf v) = Leaf v
 hRecord (Node (R cmd) ks k) = Node (R cmd) (fmap hRecord ks) (fmap (fmap hRecord) k)
 
-hFix :: Tps (Fix :+: cmd) Val -> ([(String,[String],Tps cmd Val)],Tps cmd Val)
+hFix :: Tps (Fix :+: cmd) Val -> T.Fix (Tps cmd Val)
 hFix (Leaf v) = ([],Leaf v)
 hFix (Node (R cmd) ks k) = case fmap (fmap hFix) k of
   Some (x,(fs,k')) -> (fs++fs',Node cmd ks' (Some (x,k')))

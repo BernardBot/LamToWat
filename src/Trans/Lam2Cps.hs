@@ -1,11 +1,16 @@
-module Lam2Cps where
-
-import Val
-import Lam hiding (INT,M)
-import Cps hiding (Int,M)
+module Trans.Lam2Cps where
 
 import Control.Monad.Cont
 import Control.Monad.State
+
+import Types
+
+import Lam.Syntax
+import Cps.Syntax
+
+type Lam = Lam.Syntax.Expr
+type Cps = Cps.Syntax.Expr
+type M = ContT Cps (State Int)
 
 lam2cps :: Lam -> Cps
 lam2cps =
@@ -13,8 +18,6 @@ lam2cps =
   flip runState 0 .
   flip runContT (return . DONE) .
   l2c
-
-type M = ContT Cps (State Int)
 
 l2c :: Lam -> M Val
 l2c (Var x) = return (VAR x)
@@ -42,8 +45,3 @@ l2c (Add e1 e2) = do
     c' <- c (VAR x)
     return (ADD v1 v2 x c'))
 
-fresh :: String -> State Int String
-fresh s = do
-  i <- get
-  put (i+1)
-  return $ "_" ++ s ++ show i

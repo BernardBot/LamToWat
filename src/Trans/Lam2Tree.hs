@@ -1,11 +1,18 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Lam2Tree where
+module Trans.Lam2Tree where
 
-import Val
-import Lam hiding (INT)
-import Tree hiding (App,Add)
+import Types (Val(INT,VAR,LABEL))
+import Union
 import Vec
+import Commands (Comp,Fix,Base)
+
+import Tree.Syntax
+import Tree.Commands
+
+import Lam.Syntax
+
+type Lam = Lam.Syntax.Expr
 
 lam2tree :: Lam -> Tree (Comp :+: Fix :+: Base) Val
 lam2tree (Var x) = return (VAR x)

@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
 module Wat.Test where
@@ -33,7 +32,7 @@ e1 =
 
 e2 :: Exp
 e2 =
-  Store 0 (INT 0) "42" $
+  Store 0 (INT 0) (INT 42) $
   Load 0 (INT 0) "x" $
   Done (VAR "x")
 
@@ -65,3 +64,9 @@ e6 =
   Load 10 (INT 0) "x" $
   Done (VAR "x")
   
+r0 =
+  ([("f",["x"],
+     Add (VAR "x") (INT 1) "r" $
+     Done (VAR "r"))
+   ],
+  App (INT 0) [INT 41])

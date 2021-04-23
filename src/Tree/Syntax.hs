@@ -8,8 +8,7 @@ import Control.Monad
 
 import Vec
 import Option
-
-type Sig = Nat -> Bool -> * -> * -> * -> *
+import Union
 
 data Tree (sig :: Sig) a where
   Leaf :: a -> Tree sig a

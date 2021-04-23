@@ -16,7 +16,7 @@ interp (fs,e) = interpExp e
         interpExp (Store i s t e) = do
           Int j <- interpV s
           d     <- interpV t
-          store (i+j)xo d
+          store (i+j) d
           interpExp e
         interpExp (Load i v x e) = do
           Int j <- interpV v

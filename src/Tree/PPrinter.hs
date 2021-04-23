@@ -10,10 +10,10 @@ import Types hiding (fix,Fix)
 
 import Option
 import Vec
+import Union
+import Commands
 
 import Tree.Syntax
-import Tree.Commands
-import Tree.Union
 
 instance Show (Base n b p r q) where
   show (Add v1 v2) = "(Add " ++ show v1 ++ " " ++ show v2 ++ ")"

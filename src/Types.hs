@@ -10,6 +10,15 @@ import Control.Monad.State
 import Text.Parsec
 import Text.Parsec.Indent
 
+----------
+-- Util --
+----------
+
+fresh s = do
+  i <- get
+  put (i+1)
+  return $ "_" ++ s ++ show i
+
 ------------
 -- Parser --
 ------------

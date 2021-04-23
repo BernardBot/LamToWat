@@ -69,5 +69,3 @@ spaced = intercalate " "
 sp :: [Val] -> String
 sp = spaced . map pprintV
 
-e = ([("f",["x"],Add (VAR "x") (INT 1) "r" (Done (VAR "r")))],
-  (App (INT 0) [INT 41]))

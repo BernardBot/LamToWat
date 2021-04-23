@@ -1,14 +1,17 @@
-module Cps2Wat where
+module Trans.Cps2Wat where
 
-import Val
-import Cps
-import Wat
+import Types (Val(INT,VAR,LABEL))
+import Cps.Syntax
+import Wat.Syntax
 
 import Data.Maybe
 import Data.List
 
+type Cps = Cps.Syntax.Expr
+type Wat = Wat.Syntax.Expr
+
 cps2wat :: Cps -> Wat
-cps2wat (FIX fs e) = Module fs' (go e)
+cps2wat (FIX fs e) = (fs',(go e))
   where ns :: [String]
         ns = map (\ (f,as,b) -> f) fs
 

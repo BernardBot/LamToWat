@@ -1,43 +1,14 @@
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Tps.Commands where
 
-import Types hiding (fix,Fix,record,Record,malloc,load,store)
+import Types (Val,Var)
 
 import Vec
-import Tps.Union
+import Union
+import Commands
+
 import Tps.Syntax
-
-data Base :: Sig where
-  App :: Val -> [Val] -> Base Z False
-  Add :: Val -> Val ->   Base Z True 
-
-data Record :: Sig where
-  Record :: [Val] ->      Record Z True
-  Select :: Int -> Val -> Record Z True
-
-data Fix :: Sig where
-  Fix :: Vec n (String,[String]) -> Fix n True
-
-data Malloc :: Sig where
-  Malloc :: Int ->               Malloc Z True
-  Load   :: Int -> Val ->        Malloc Z True
-  Store  :: Int -> Val -> Val -> Malloc Z True
-
-data VoidCmd :: Sig where
-
-------------------------
--- Smart Constructors --
-------------------------
-
--- TODO: add type sigs
 
 done = Leaf
 app v vs = liftF (inj (App v vs)) Nil

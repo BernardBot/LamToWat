@@ -12,36 +12,37 @@ module Tps.PPrinter where
 
 import Option
 import Vec
+import Union
+import Commands
 
 import Tps.Syntax
 import Tps.Commands
-import Tps.Union
 
 import Types hiding (Record,Fix)
 
-type TpsWat = Tps (Malloc :+: Base :+: VoidCmd) Val
+type TpsWat = Tps (Malloc :+: Base :+: Empty) Val
 
 instance {-# OVERLAPPING #-} Show ([(String,[String],TpsWat)],TpsWat) where
   show (fs,e) = concatMap (\ (f,as,b) -> "def " ++ f ++ args as ++ ":\n" ++ indent (show b)) fs ++ show e
 
-instance Show (Base n b) where
+instance Show (Base n b p r q) where
   show (App v vs) = show v ++ args (map show vs)
   show (Add v1 v2) = show v1 ++ " + " ++ show v2
 
-instance Show (Record n b) where
+instance Show (Record n b p r q) where
   show (Record vs) = show vs
   show (Select i v) = show v ++ "[" ++ show i ++ "]"
 
-instance Show (Malloc n b) where
+instance Show (Malloc n b p r q) where
   show (Malloc i) = "malloc " ++ show i
   show (Load i v) = "load " ++ show i ++ " " ++ show v
   show (Store i s t) = "store " ++ show i ++ " " ++ show s ++ " " ++ show t
 
 data Print :: Sig where
-  Print :: (Vec n String -> String) -> Print n b
+  Print :: (Vec n String -> String) -> Print n b p r q
 
 class Printable (f :: Sig) where
-  pCmd :: f n b -> Print n b
+  pCmd :: f n b p r q -> Print n b p r q
 
   pTps :: Tps f a -> Tps Print a
   pTps (Leaf a) = Leaf a
@@ -71,7 +72,7 @@ instance {-# OVERLAPPING #-} Show a => Show (Tps Print a) where
     None        -> s
 instance                     (Show a, Printable f)                       => Show (Tps f                     a) where show = show . pTps
 instance {-# OVERLAPPING #-} (Show a, Printable f)                       => Show (Tps (Print :+: f)         a) where show = show . morge . pTps' . swop
-instance {-# OVERLAPPING #-} Show a                                      => Show (Tps (Print :+: VoidCmd)   a) where show = show . dropVoid
+instance {-# OVERLAPPING #-} Show a                                      => Show (Tps (Print :+: Empty)   a) where show = show . dropVoid
 instance {-# OVERLAPPING #-} (Show (Tps (Print :+: cmd) a), Printable f) => Show (Tps (f :+: cmd)           a) where show = show . pTps'
 instance {-# OVERLAPPING #-} (Show (Tps (Print :+: cmd) a), Printable f) => Show (Tps (Print :+: f :+: cmd) a) where show = show . merge . pTps' . swap
 
@@ -79,11 +80,11 @@ instance {-# OVERLAPPING #-} (Show (Tps (Print :+: cmd) a), Printable f) => Show
 -- Helper Functions --
 ----------------------
 
-liftSigF :: (forall n b. sig n b -> sig' n b) -> Tps sig a -> Tps sig' a
+liftSigF :: (forall n b p r q. sig n b p r q -> sig' n b p r q) -> Tps sig a -> Tps sig' a
 liftSigF f (Leaf v)        = Leaf v
 liftSigF f (Node cmd ks k) = Node (f cmd) (fmap (liftSigF f) ks) (fmap (fmap (liftSigF f)) k)
                        
-swap' :: (f :+: g :+: h) n b -> (g :+: f :+: h) n b
+swap' :: (f :+: g :+: h) n b p r q -> (g :+: f :+: h) n b p r q
 swap' (L a)     = R (L a)
 swap' (R (L a)) = L a
 swap' (R (R a)) = R (R a)
@@ -91,7 +92,7 @@ swap' (R (R a)) = R (R a)
 swap :: Tps (f :+: g :+: h) a -> Tps (g :+: f :+: h) a
 swap = liftSigF swap'
 
-merge' :: (f :+: f :+: g) n b -> (f :+: g) n b
+merge' :: (f :+: f :+: g) n b p r q -> (f :+: g) n b p r q
 merge' (L a)     = L a
 merge' (R (L a)) = L a
 merge' (R (R a)) = R a
@@ -99,12 +100,12 @@ merge' (R (R a)) = R a
 merge :: Tps (f :+: f :+: g) a -> Tps (f :+: g) a
 merge = liftSigF merge'
 
-dropVoid' :: (f :+: VoidCmd) n b -> f n b
+dropVoid' :: (f :+: Empty) n b p r q -> f n b p r q
 dropVoid' (L a) = a
 
 dropVoid = liftSigF dropVoid'
 
-addVoid' :: f n b -> (f :+: VoidCmd) n b
+addVoid' :: f n b p r q -> (f :+: Empty) n b p r q
 addVoid' a = (L a)
 
 addVoid = liftSigF addVoid'
@@ -128,7 +129,7 @@ e =
     ((Node (R (Add (VAR "x") (INT 1))) Nil (Some ("n", Leaf (VAR "n")))) ::: Nil) (Some ("",
     Node (R (App (VAR "f") [INT 41])) Nil None))
 
-e' :: Tps (Malloc :+: Fix :+: Base :+: VoidCmd) Val
+e' :: Tps (Malloc :+: Fix :+: Base :+: Empty) Val
 e' = do
   fix_ (("f",["x"],do
         add_ (VAR "x") (INT 1) "n"
