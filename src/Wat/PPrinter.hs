@@ -2,7 +2,7 @@ module Wat.PPrinter where
 
 import Data.List
 
-import Types hiding (pprintV,func)
+import Types hiding (pprintV)
 
 import Wat.Syntax
 

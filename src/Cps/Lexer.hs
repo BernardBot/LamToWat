@@ -19,7 +19,7 @@ style = LanguageDef
         , identLetter     = alphaNum <|> oneOf "_'"
         , opStart         = opLetter style
         , opLetter        = oneOf ":!#$%&*+./<=>?@\\^|-~"
-        , reservedOpNames = ["(",")",":","=","+","[","]",","]
+        , reservedOpNames = [":","=","+"]
         , reservedNames   = ["def","return"]
         , caseSensitive   = True
         }
