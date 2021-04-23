@@ -1,5 +1,7 @@
 module Types where
 
+import Data.String
+import Data.Char (isDigit)
 import Data.Maybe
 import Data.List
 
@@ -41,7 +43,14 @@ data Val
   = INT Int
   | VAR Var
   | LABEL Var
-  deriving Show
+  deriving (Eq,Show)
+
+instance IsString Val where
+  fromString "" = VAR "" -- INT 0 ?
+  fromString s@(x:xs)
+    | isDigit x = INT $ read s
+    | x == '$'  = LABEL s
+    | otherwise = VAR s
 
 pprintV :: Val -> String
 pprintV (INT i) = show i

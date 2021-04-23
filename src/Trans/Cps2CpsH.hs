@@ -1,4 +1,4 @@
-module Trans.Cps2Cps where
+module Trans.Cps2CpsH where
 
 import Control.Monad.Writer
 import Control.Monad.Reader

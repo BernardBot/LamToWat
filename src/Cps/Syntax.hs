@@ -5,8 +5,8 @@ import Types
 data Expr
   = APP Val [Val]
   | DONE Val
-  | RECORD [Val] String Expr
-  | SELECT Int Val String Expr
-  | ADD Val Val String Expr
+  | RECORD [Val] Var Expr
+  | SELECT Int Val Var Expr
+  | ADD Val Val Var Expr
   | FIX [Fun Expr] Expr
-  deriving Show
+  deriving (Eq,Show)
