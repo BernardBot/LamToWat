@@ -5,8 +5,6 @@ module Cps.Test where
 import Types
 
 import Cps.Syntax
-import Cps.PPrinter
-import Cps.Run
 
 es :: [Expr]
 es =

@@ -1,17 +1,16 @@
 module Lam.Test where
 
+import Types
 import Lam.Syntax
-import Lam.PPrinter
-import Lam.Run
 import Lam.Parser
 
 es :: [Expr]
 es =
-  [ Num 42
+  [ Val (INT 42)
 
-  , Add (Num 13) (Num 29)
+  , Add (Val (INT 13)) (Val (INT 29))
 
-  , App (App (Lam "x" (Lam "y" (Add (Var "x") (Var "y")))) (Num 13)) (Num 29)
+  , App (App (Lam "x" (Lam "y" (Add (Val (VAR "x")) (Val (VAR "y"))))) (Val (INT 13))) (Val (INT 29))
   ]
 
 -- Parser Tests --

@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
@@ -8,6 +10,5 @@ data Option :: Bool -> * -> * where
   Some :: a -> Option True a
   None ::      Option False a
 
-instance Functor (Option b) where
-  fmap f (Some x) = Some (f x)
-  fmap f None     = None
+deriving instance Show a => Show (Option b a)
+deriving instance Functor (Option b)

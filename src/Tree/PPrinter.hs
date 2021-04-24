@@ -15,19 +15,6 @@ import Commands
 
 import Tree.Syntax
 
-instance Show (Base n b p r q) where
-  show (Add v1 v2) = "(Add " ++ show v1 ++ " " ++ show v2 ++ ")"
-  show (App v vs)  = "(App " ++ show v ++ " " ++ show vs ++ ")"
-
-instance Show (Fix n b p r q) where
-  show (Fix fxs)   = "(Fix " ++ show fxs ++ ")"
-
-instance Show (Comp n b p r q) where
-  show (SetK x v)  = "(SetK " ++ x ++ " " ++ show v ++ ")"
-  show (GetK x)    = "(GetK " ++ x ++ ")"
-  show Block       = "(Block)"
-  show (Fresh x)   = "(Fresh " ++ x ++ ")"
-
 ---------------------------------------
 --- show instance for command trees ---
 ---------------------------------------

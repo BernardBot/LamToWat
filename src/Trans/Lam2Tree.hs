@@ -15,8 +15,7 @@ import Lam.Syntax
 type Lam = Lam.Syntax.Expr
 
 lam2tree :: Lam -> Tree (Comp :+: Fix :+: Base) Val
-lam2tree (Var x) = return (VAR x)
-lam2tree (Num i) = return (INT i)
+lam2tree (Val v) = return v
 lam2tree (Lam x e) = do
   f <- fresh "f"
   k <- fresh "k"

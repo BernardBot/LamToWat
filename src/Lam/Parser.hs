@@ -4,18 +4,13 @@ import Text.Parsec
 import Text.Parsec.Expr
 import Text.Parsec.Indent
 
-import Types hiding (letin,parens)
+import Types hiding (letin,parens,int)
 
 import Lam.Lexer
 import Lam.Syntax
 
-parseExpr' :: StreamP -> Expr
-parseExpr' s = case parseExpr s of
-  Right exp -> exp
-  Left err -> error $ show err
-
-parseExpr :: StreamP -> Either ParseError Expr
-parseExpr = runIndentParser (between whiteSpace eof expr) () ""
+instance Parsable Expr where
+  parseExpr = runIndentParser (between whiteSpace eof expr) () ""
 
 expr :: Parser Expr
 expr = buildExpressionParser table term
@@ -29,18 +24,17 @@ table = [[binary ""  App AssocLeft]
 
 term :: Parser Expr
 term = choice
-  [ try var
-  , try num
+  [ try val
   , try lam
   , try letin
   , parens expr
   ]
 
-var :: Parser Expr
-var = Var <$> identifier
-
-num :: Parser Expr
-num = Num <$> fromInteger <$> integer
+val :: Parser Expr
+val = Val <$> choice
+  [ try var
+  , int
+  ]
 
 lam :: Parser Expr
 lam = do
@@ -59,3 +53,11 @@ letin = do
   reserved "in"
   e2 <- expr
   return $ App (Lam x e2) e1
+
+-- Val parser
+
+var :: Parser Val
+var = VAR <$> identifier
+
+int :: Parser Val
+int = INT <$> fromInteger <$> integer

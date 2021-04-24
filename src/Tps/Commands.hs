@@ -45,4 +45,3 @@ load_ i v x = load i v x (Leaf ())
 
 store i s t k = liftT (inj (Store i s t)) Nil "" k
 store_ i s t = store i s t (Leaf ())
-

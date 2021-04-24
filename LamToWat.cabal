@@ -15,39 +15,28 @@ executable lam2wat
                        Commands
                        Run
 
-                       Cps.Interpreter
                        Cps.Lexer
-                       Cps.PPrinter
                        Cps.Parser
-                       Cps.Run
                        Cps.Syntax
                        Cps.Test
 
-                       CpsH.Interpreter
                        CpsH.Lexer
-                       CpsH.PPrinter
                        CpsH.Parser
-                       CpsH.Run
                        CpsH.Syntax
                        CpsH.Test
 
-                       Lam.Interpreter
                        Lam.Lexer
-                       Lam.PPrinter
                        Lam.Parser
-                       Lam.Run
                        Lam.Syntax
                        Lam.Test
 
                        Tps.Commands
                        Tps.PPrinter
-                       Tps.Run
                        Tps.Syntax
                        Tps.Test
 
                        Tree.Commands
                        Tree.PPrinter
-                       Tree.Run
                        Tree.Syntax
                        Tree.Test
 
@@ -58,11 +47,6 @@ executable lam2wat
                        Trans.Tps2Wat
                        Trans.Tree2Tps
 
-                       Wat.Interpreter
-                       Wat.Lexer
-                       Wat.PPrinter
-                       Wat.Parser
-                       Wat.Run
                        Wat.Syntax
                        Wat.Test
 

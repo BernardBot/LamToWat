@@ -1,16 +1,21 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Tps.Syntax where
 
 import Control.Monad
 
-import Types (Val)
+import Types
 
 import Option
 import Vec
 import Union
+import Commands
 
 data Tps (sig :: Sig) a where
   Leaf :: a -> Tps sig a
@@ -35,3 +40,7 @@ liftT op ps x k = Node op ps (Some (x, k))
 
 liftF :: sig n 'False p r q -> Vec n (Tps sig Val) -> Tps sig a
 liftF op ps = Node op ps None
+
+instance (Show a, ShowSig sig) => Show (Tps sig a) where
+  show (Leaf a) = "Leaf " ++ show a
+  show (Node cmd ks k) = "Node " ++ showSig cmd ++ " " ++ show ks ++ show k

@@ -9,13 +9,8 @@ import Types hiding (parens,int,record,fix)
 import Cps.Lexer
 import Cps.Syntax
 
-parseExpr' :: StreamP -> Expr
-parseExpr' s = case parseExpr s of
-  Right exp -> exp
-  Left err -> error $ show err
-
-parseExpr :: StreamP -> Either ParseError Expr
-parseExpr = runIndentParser (between whiteSpace eof expr) () ""
+instance Parsable Expr where
+  parseExpr = runIndentParser (between whiteSpace eof expr) () ""
 
 expr :: Parser Expr
 expr = buildExpressionParser table term

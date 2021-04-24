@@ -5,7 +5,7 @@
 
 module Vec where
 
-data Nat = Z | S Nat
+import Types
 
 infixr 9 :::
 data Vec n a where

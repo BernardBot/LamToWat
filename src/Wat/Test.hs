@@ -3,8 +3,6 @@ module Wat.Test where
 import Types
 
 import Wat.Syntax
-import Wat.PPrinter
-import Wat.Run
 
 e0 :: Expr
 e0 =

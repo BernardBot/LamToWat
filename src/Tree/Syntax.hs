@@ -6,9 +6,9 @@ module Tree.Syntax where
 
 import Control.Monad
 
+import Types
 import Vec
 import Option
-import Union
 
 data Tree (sig :: Sig) a where
   Leaf :: a -> Tree sig a

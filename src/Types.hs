@@ -1,7 +1,13 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Types where
 
 import Data.String
-import Data.Char (isDigit)
+import Data.Char
 import Data.Maybe
 import Data.List
 
@@ -11,6 +17,16 @@ import Control.Monad.State
 
 import Text.Parsec
 import Text.Parsec.Indent
+
+----------------
+-- Signatures --
+----------------
+data Nat = Z | S Nat
+
+type Sig = Nat -> Bool -> * -> * -> * -> *
+
+class ShowSig (sig :: Sig) where
+  showSig :: sig n b p r q -> String
 
 ----------
 -- Util --
@@ -28,8 +44,15 @@ fresh s = do
 type StreamP = String
 type UserStateP = ()
 type MonadP = IndentT Identity
-
 type Parser a = ParsecT StreamP UserStateP MonadP a 
+
+class Parsable a where
+  parseExpr :: StreamP -> Either ParseError a
+
+  parseExpr' :: StreamP -> a
+  parseExpr' s = case parseExpr s of
+    Right exp -> exp
+    Left err -> error $ show err
 
 -----------------
 -- Definitions --
@@ -45,6 +68,16 @@ data Val
   | LABEL Var
   deriving (Eq,Show)
 
+instance Interpretable Val where
+  interp (INT i) = int i
+  interp (VAR x) = look x
+  interp (LABEL x) = look x
+
+instance PPrintable Val where
+  pprint (INT i) = show i
+  pprint (VAR x) = x
+  pprint (LABEL x) = x
+
 instance IsString Val where
   fromString "" = VAR "" -- INT 0 ?
   fromString s@(x:xs)
@@ -52,27 +85,14 @@ instance IsString Val where
     | x == '$'  = LABEL s
     | otherwise = VAR s
 
-pprintV :: Val -> String
-pprintV (INT i) = show i
-pprintV (VAR x) = x
-pprintV (LABEL x) = x
-
-interpV :: Val -> IDom
-interpV (INT i) = int i
-interpV (VAR x) = look x
-interpV (LABEL x) = look x
-
 -----------------
 -- Interpreter --
 -----------------
 
 type Env = [(Var,Dom)]
-
 type Pointer = Int
 type Heap = (Pointer,[Dom])
-
 type Interp = StateT Heap (ReaderT Env Maybe)
-
 type IDom = Interp Dom
 
 data Dom
@@ -90,7 +110,20 @@ instance Eq Dom where
   Record xs == Record ys = xs == ys
   _         == _         = False
 
+class Interpretable a where
+  interp :: a -> IDom
+
 -- Run interpreter --
+
+runInterp :: Env -> Heap -> IDom -> Dom
+runInterp env heap =
+  fst .
+  fromJust . -- Error handling?
+  flip runReaderT env .
+  flip runStateT heap
+
+run :: Interpretable a => Env -> Heap -> a -> Dom
+run env heap = runInterp env heap . interp
 
 env0 :: Env
 env0 = []
@@ -100,12 +133,11 @@ heap0 = (0,replicate frameSize (Int 0))
   where frameSize :: Int
         frameSize = 64 * 1024 -- 64 KB
 
-runInterp :: IDom -> Dom
-runInterp =
-  fst .
-  fromJust . -- Error handling?
-  flip runReaderT env0 .
-  flip runStateT heap0
+runInterp0 :: IDom -> Dom
+runInterp0 = runInterp env0 heap0
+
+run0 :: Interpretable a => a -> Dom
+run0 = runInterp0 . interp
 
 -- Interpreter helper functions --
 
@@ -176,6 +208,21 @@ load i = do
 ---------------------
 -- Pretty Printing --
 ---------------------
+
+class PPrintable a where
+  pprint :: a -> String
+
+  pprintIO :: a -> IO ()
+  pprintIO = putStrLn . pprint
+
+instance PPrintable a => PPrintable [a] where
+  pprint = recs . map pprint
+
+instance PPrintable a => PPrintable (Fun a) where
+  pprint (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (pprint b)
+
+instance PPrintable a => PPrintable (Fix a) where
+  pprint (fs,e) = concatMap pprint fs ++ pprint e
 
 indent :: String -> String
 indent = unlines . map ("  "++) . lines
