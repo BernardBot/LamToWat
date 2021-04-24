@@ -59,9 +59,6 @@ class Parsable a where
 class Transformable a b where
   transform :: a -> b
 
-instance Transformable a b => Transformable [a] [b] where
-  transform = map transform
-
 -----------------
 -- Definitions --
 -----------------

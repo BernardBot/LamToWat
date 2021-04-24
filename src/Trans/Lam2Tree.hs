@@ -15,7 +15,6 @@ import Tree.Commands
 
 import Lam.Syntax
 
-type Lam = Lam.Syntax.Expr
 type LamTree = Tree (Comp :+: Fix :+: Base) Val
 
 instance Transformable Lam LamTree where

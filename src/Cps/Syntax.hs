@@ -5,6 +5,8 @@ module Cps.Syntax where
   
 import Types
 
+type Cps = Cps.Syntax.Expr
+
 data Expr
   = APP Val [Val]
   | DONE Val

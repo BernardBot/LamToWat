@@ -5,6 +5,8 @@ module Hps.Syntax where
   
 import Types
 
+type Hps = Hps.Syntax.Expr
+
 type Expr = Fix Exp
 
 data Exp

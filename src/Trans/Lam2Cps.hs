@@ -12,8 +12,6 @@ import Types
 import Lam.Syntax
 import Cps.Syntax
 
-type Lam = Lam.Syntax.Expr
-type Cps = Cps.Syntax.Expr
 type TransM = ContT Cps (State Int)
 
 instance Transformable Lam Cps where

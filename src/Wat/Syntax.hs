@@ -8,6 +8,8 @@ import Control.Monad
 
 import Types
 
+type Wat = Wat.Syntax.Expr
+
 type Expr = Fix Exp
 
 type Offset = Int

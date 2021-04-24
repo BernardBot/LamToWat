@@ -11,11 +11,12 @@ import Data.Tuple
 
 import Types
 
+import Cps.Syntax
+import Hps.Syntax
+
 import qualified Cps.Syntax as C
 import qualified Hps.Syntax as H
 
-type Cps = C.Expr
-type Hps = H.Expr
 type TransM = WriterT [Fun H.Exp] (Reader [Var])
 
 instance Transformable Cps Hps where

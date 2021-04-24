@@ -24,7 +24,6 @@ import qualified Wat.Syntax as W
 import Tps.Syntax
 import Wat.Syntax
 
-type Wat = Wat.Syntax.Expr
 type WatTps = Tps (Malloc :+: Base :+: Empty) Val
 
 instance Transformable (Fix WatTps) Wat where

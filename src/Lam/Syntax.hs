@@ -2,6 +2,8 @@ module Lam.Syntax where
 
 import Types
 
+type Lam = Lam.Syntax.Expr
+
 data Expr
   = Lam Var Expr
   | App Expr Expr

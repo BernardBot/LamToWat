@@ -16,9 +16,6 @@ import Wat.Syntax
 import qualified Hps.Syntax as H (Exp)
 import qualified Wat.Syntax as W (Exp)
 
-type Hps = Hps.Syntax.Expr
-type Wat = Wat.Syntax.Expr
-
 instance Transformable Hps Wat where
   transform (fs,e) = (map (fmap trans) fs,trans e)
     where ns = map (\ (f,as,b) -> f) fs

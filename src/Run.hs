@@ -1,19 +1,25 @@
+{-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE TypeOperators #-}
+
 module Run where
 
 import Development.Shake
 
+import Types
+
 import Lam.Syntax
+import Cps.Syntax
+import Hps.Syntax
 import Wat.Syntax
 
+import Trans.Lam2Cps
+import Trans.Cps2Hps
+import Trans.Hps2Wat
 
-import Trans.Cps2CpsH
-import Trans.Cps2Wat
 import Trans.Lam2Tree
+import Trans.Tree2Tps
 import Trans.Tps2Tps
 import Trans.Tps2Wat
-import Trans.Tree2Tps
-
 
 runWatFile :: FilePath -> FilePath -> IO ()
 runWatFile watfile wasmfile = do
@@ -22,5 +28,8 @@ runWatFile watfile wasmfile = do
   where wat2wasm = "/Users/ben/wabt/bin/wat2wasm"
         wasminterp = "/Users/ben/wabt/bin/wasm-interp"
 
-lam2wat :: Lam.Syntax.Expr -> Wat.Syntax.Expr
-lam2wat = cps2cpsH . lam2cps
+foo :: Lam.Syntax.Expr -> Wat.Syntax.Expr
+foo =
+  (transform :: Hps -> Wat) .
+  (transform :: Cps -> Hps) .
+  (transform :: Lam -> Cps)
