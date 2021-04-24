@@ -28,17 +28,19 @@ instance {-# OVERLAPPING #-} f :<: (f :+: g) where
 instance f :<: g => f :<: (h :+: g) where
   inj = R . inj
 
-deriving instance (  Show (sigl            n b p r q)
-                  ,  Show (sigr            n b p r q))
-                  => Show ((sigl :+: sigr) n b p r q)
+deriving instance (Show (sigl n b p r q), Show (sigr n b p r q)) => Show ((sigl :+: sigr) n b p r q)
 
-instance (  PPrintable (sigl            n b p r q)
-         ,  PPrintable (sigr            n b p r q))
-         => PPrintable ((sigl :+: sigr) n b p r q) where
-  pprint (L a) = pprint a
-  pprint (R a) = pprint a
-  
 instance (ShowSig a, ShowSig b) => ShowSig (a :+: b) where
-  showSig (L a) = showSig a
-  showSig (R a) = showSig a
+  showSig (L a) = "L (" ++ showSig a ++ ")"
+  showSig (R a) = "R (" ++ showSig a ++ ")"
+
+instance (PPrintable (sigl n b p r q), PPrintable (sigr n b p r q)) => PPrintable ((sigl :+: sigr) n b p r q) where
+  pprint (L a) = "L (" ++ pprint a ++ ")"
+  pprint (R a) = "R (" ++ pprint a ++ ")"
+
+instance (PPrintableSig sigl, PPrintableSig sigr) => PPrintableSig (sigl :+: sigr) where
+  pprintSig (L a) = "L (" ++ pprintSig a ++ ")"
+  pprintSig (R a) = "R (" ++ pprintSig a ++ ")"
+  
+
 

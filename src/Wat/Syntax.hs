@@ -54,7 +54,7 @@ instance Interpretable Exp where
     f ds
   interp (Done v) = interp v
 
-instance {-# OVERLAPS #-} PPrintable Expr where
+instance PPrintable Expr where
   pprint (fs,e) =
     "(module\n" ++
     "(memory 1)\n" ++
@@ -72,7 +72,7 @@ instance {-# OVERLAPS #-} PPrintable Expr where
           typedef :: Int -> String
           typedef len = "(type $" ++ _t ++ show len ++ " (func " ++ spaced (replicate len "(param i32)") ++ " (result i32)))\n"
           
-instance {-# OVERLAPS #-} PPrintable (Fun Exp) where
+instance PPrintable (Fun Exp) where
   pprint (f,as,b) =
     "(func $" ++ f ++ " " ++ params as ++ " (result i32) " ++ locals ls ++ "\n" ++ indent (pprint b) ++ ")\n"
     where param p = "(param $" ++ p ++ " i32)"

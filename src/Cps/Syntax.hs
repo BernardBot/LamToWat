@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module Cps.Syntax where
   
 import Types
@@ -36,4 +39,8 @@ instance PPrintable Expr where
   pprint (ADD v1 v2 x e)  = assign x (pprint v1 ++ " + " ++ pprint v2) ++ pprint e
   pprint (RECORD vs x e)  = assign x (recs (map pprint vs)            ) ++ pprint e
   pprint (SELECT n v x e) = assign x (pprint v ++ "[" ++ show n ++ "]") ++ pprint e
-  pprint (FIX fs e)       = pprint (fs,e)
+  pprint (FIX fs e)       = concatMap pprint fs ++ pprint e
+
+instance PPrintable (Fun Expr) where
+  pprint (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (pprint b)
+

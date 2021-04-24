@@ -28,6 +28,9 @@ type Sig = Nat -> Bool -> * -> * -> * -> *
 class ShowSig (sig :: Sig) where
   showSig :: sig n b p r q -> String
 
+class PPrintableSig (sig :: Sig) where
+  pprintSig :: sig n b p r q -> String
+  
 ----------
 -- Util --
 ----------
@@ -217,12 +220,6 @@ class PPrintable a where
 
 instance PPrintable a => PPrintable [a] where
   pprint = recs . map pprint
-
-instance PPrintable a => PPrintable (Fun a) where
-  pprint (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (pprint b)
-
-instance PPrintable a => PPrintable (Fix a) where
-  pprint (fs,e) = concatMap pprint fs ++ pprint e
 
 indent :: String -> String
 indent = unlines . map ("  "++) . lines

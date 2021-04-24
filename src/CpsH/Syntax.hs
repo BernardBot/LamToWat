@@ -35,9 +35,15 @@ instance Interpretable Exp where
     letin x (ds !! i) (interp e)
   interp (DONE v) = interp v
 
+instance PPrintable Expr where
+  pprint (fs,e) = concatMap pprint fs ++ pprint e
+
+instance PPrintable (Fun Exp) where
+  pprint (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (pprint b)
+
 instance PPrintable Exp where
   pprint (APP v vs)       = pprint v ++ args (map pprint vs)
   pprint (DONE v)         = "return " ++ pprint v
-  pprint (ADD v1 v2 x e)  = assign x (pprint v1 ++ " + " ++ pprint v2) ++ pprint e
+  pprint (ADD v1 v2 x e)  = assign x (pprint v1 ++ " + " ++ pprint v2)  ++ pprint e
   pprint (RECORD vs x e)  = assign x (recs (map pprint vs)            ) ++ pprint e
   pprint (SELECT n v x e) = assign x (pprint v ++ "[" ++ show n ++ "]") ++ pprint e

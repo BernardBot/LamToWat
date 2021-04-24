@@ -42,5 +42,9 @@ liftF :: sig n 'False p r q -> Vec n (Tps sig Val) -> Tps sig a
 liftF op ps = Node op ps None
 
 instance (Show a, ShowSig sig) => Show (Tps sig a) where
-  show (Leaf a) = "Leaf " ++ show a
-  show (Node cmd ks k) = "Node " ++ showSig cmd ++ " " ++ show ks ++ show k
+  show (Leaf a)        = "Leaf " ++ parens (show a)
+  show (Node cmd ks k) =
+    "Node " ++
+    parens (showSig cmd) ++ "\n" ++
+    indent (parens (show ks)) ++
+    parens (show k)
