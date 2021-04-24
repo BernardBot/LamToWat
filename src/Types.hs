@@ -1,8 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module Types where
 
@@ -27,9 +24,6 @@ type Sig = Nat -> Bool -> * -> * -> * -> *
 
 class ShowSig (sig :: Sig) where
   showSig :: sig n b p r q -> String
-
-class PPrintableSig (sig :: Sig) where
-  pprintSig :: sig n b p r q -> String
   
 ----------
 -- Util --

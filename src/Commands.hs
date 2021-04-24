@@ -38,10 +38,6 @@ data Malloc :: Sig where
 
 data Empty :: Sig where
   
---------------
--- Printing --
---------------
-
 deriving instance Show (Base n b p r q)
 deriving instance Show (Fix n b p r q)
 deriving instance Show (Comp n b p r q)
@@ -55,26 +51,3 @@ instance ShowSig Comp   where showSig = show
 instance ShowSig Record where showSig = show
 instance ShowSig Malloc where showSig = show
 instance ShowSig Empty  where showSig = show
-
-instance PPrintable (Base n b p r q) where
-  pprint (App v vs) = pprint v ++ args (map pprint vs)
-  pprint (Add v1 v2) = pprint v1 ++ " + " ++ pprint v2
-
-instance PPrintable (Record n b p r q) where
-  pprint (Record vs) = pprint vs
-  pprint (Select i v) = pprint v ++ "[" ++ show i ++ "]"
-
-instance PPrintable (Malloc n b p r q) where
-  pprint (Malloc i) = "malloc " ++ show i
-  pprint (Load i v) = "load " ++ show i ++ " " ++ pprint v
-  pprint (Store i s t) = "store " ++ show i ++ " " ++ pprint s ++ " " ++ pprint t
-
-instance PPrintableSig Base   where pprintSig = pprint
-instance PPrintableSig Record where pprintSig = pprint
-instance PPrintableSig Malloc where pprintSig = pprint
-
-class PPrintableSigWith (sig :: Sig) where
-  pprintSigWith :: sig n b p r q -> (Vec n String -> String)
-
-instance PPrintableSig sig => PPrintableSigWith sig where
-  pprintSigWith = const . pprintSig
