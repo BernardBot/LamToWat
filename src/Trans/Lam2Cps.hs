@@ -1,3 +1,7 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module Trans.Lam2Cps where
 
 import Control.Monad.Cont
@@ -10,38 +14,36 @@ import Cps.Syntax
 
 type Lam = Lam.Syntax.Expr
 type Cps = Cps.Syntax.Expr
-type M = ContT Cps (State Int)
+type TransM = ContT Cps (State Int)
 
-lam2cps :: Lam -> Cps
-lam2cps =
-  fst .
-  flip runState 0 .
-  flip runContT (return . DONE) .
-  l2c
+instance Transformable Lam Cps where
+  transform =
+    fst .
+    flip runState 0 .
+    flip runContT (return . DONE) .
+    trans
 
-l2c :: Lam -> M Val
-l2c (Var x) = return (VAR x)
-l2c (Num i) = return (INT i)
-l2c (Lam x e) = ContT (\ c -> do
+trans :: Lam -> TransM Val
+trans (Val v) = return v
+trans (Lam x e) = ContT (\ c -> do
   f <- fresh "f"
   k <- fresh "k"
-  cf <- runContT (l2c e) (\ z ->
+  cf <- runContT (trans e) (\ z ->
           return (APP (VAR k) [z]))
   c' <- c (LABEL f)
   return (FIX [(f,[x,k],cf)] c'))
-l2c (App e1 e2) = do
-  v1 <- l2c e1
-  v2 <- l2c e2
+trans (App e1 e2) = do
+  v1 <- trans e1
+  v2 <- trans e2
   ContT (\ c -> do
     r <- fresh "r"
     x <- fresh "x"
     c' <- c (VAR x)
     return (FIX [(r,[x],c')] (APP v1 [v2, LABEL r])))
-l2c (Add e1 e2) = do
-  v1 <- l2c e1
-  v2 <- l2c e2
+trans (Add e1 e2) = do
+  v1 <- trans e1
+  v2 <- trans e2
   ContT (\ c -> do
     x <- fresh "x"
     c' <- c (VAR x)
     return (ADD v1 v2 x c'))
-

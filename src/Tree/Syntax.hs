@@ -1,3 +1,6 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
@@ -5,6 +8,8 @@
 {-# LANGUAGE GADTs #-}
 
 module Tree.Syntax where
+
+import Data.Void
 
 import Control.Monad
 import Control.Monad.State
@@ -39,11 +44,13 @@ liftT op ps = Node op ps (Some Leaf)
 liftF :: sig n 'False p r q -> Vec n (p -> Tree sig r) -> Tree sig a
 liftF op ps = Node op ps None
 
+-- TODO: make printing modular
+
 type LamCmd = Comp :+: Fix :+: Base
 
 instance Show a => Show (Tree LamCmd a) where
-  show = fst . flip runState 0 . go
-    where go :: Show a => Tree LamCmd a -> State Int String
+  show = runFresh . go
+    where go :: Show a => Tree LamCmd a -> State Integer String
           go (Leaf v) = return $ show v
           go (Node (R (R op@(Add _ _))) Nil (Some k)) = do
             x <- fresh "x"

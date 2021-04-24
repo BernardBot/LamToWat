@@ -20,10 +20,8 @@ executable lam2wat
                        Cps.Syntax
                        Cps.Test
 
-                       CpsH.Lexer
-                       CpsH.Parser
-                       CpsH.Syntax
-                       CpsH.Test
+                       Hps.Syntax
+                       Hps.Test
 
                        Lam.Lexer
                        Lam.Parser
@@ -31,17 +29,15 @@ executable lam2wat
                        Lam.Test
 
                        Tps.Commands
-                       Tps.PPrinter
                        Tps.Syntax
                        Tps.Test
 
                        Tree.Commands
-                       Tree.PPrinter
                        Tree.Syntax
                        Tree.Test
 
-                       Trans.Cps2CpsH
-                       Trans.Cps2Wat
+                       Trans.Cps2Hps
+                       Trans.Hps2Wat
                        Trans.Lam2Tree
                        Trans.Tps2Tps
                        Trans.Tps2Wat

@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Tps.Commands where
 

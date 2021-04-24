@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE GADTs #-}
 
@@ -13,28 +16,31 @@ import Vec
 import Union
 import Commands hiding (Fix)
 
-import Tps.Syntax
+import qualified Commands as T
+
+import qualified Tps.Syntax as T
 import qualified Wat.Syntax as W
 
-type Wat = W.Expr
-type TpsWat = Tps (Malloc :+: Base :+: Empty) Val
+import Tps.Syntax
+import Wat.Syntax
 
-tps2wat :: Fix TpsWat -> Wat
-tps2wat (fs,e) = (fs',(go e))
-  where ns :: [Var]
-        ns = map (\ (f,as,b) -> f) fs
+type Wat = Wat.Syntax.Expr
+type WatTps = Tps (Malloc :+: Base :+: Empty) Val
 
-        fs' :: [(String,[String],W.Exp)]
-        fs' = map (\ (f,as,b) -> (f,as,go b)) fs
+instance Transformable (Fix WatTps) Wat where
+  transform (fs,e) = (map (fmap trans) fs,trans e)
+    where ns = map (\ (f,as,b) -> f) fs
+          trans e = transform (ns,e)
 
-        go :: TpsWat -> W.Exp
-        go (Leaf v)                                    = W.Done (vo v)
-        go (Node (L (Malloc i))      Nil (Some (x,k))) = W.Malloc i x (go k)
-        go (Node (L (Load i v))      Nil (Some (x,k))) = W.Load i (vo v) x (go k)
-        go (Node (L (Store i s t))   Nil (Some (_,k))) = W.Store i (vo s) (vo t) (go k)
-        go (Node (R (L (Add v1 v2))) Nil (Some (x,k))) = W.Add (vo v1) (vo v2) x (go k)
-        go (Node (R (L (App v vs)))  Nil None)         = W.App (vo v) (map vo vs)
-        
-        vo v = case v of
-          LABEL x -> INT (fromJust (x `elemIndex` ns))
-          _       -> v
+instance Transformable ([Var],WatTps) W.Exp where
+  transform (ns,hexp) = let trans e = transform (ns,e) in case hexp of
+    Leaf v                                      -> W.Done (trans v)
+    Node (L (T.Malloc i))      Nil (Some (x,k)) -> W.Malloc i x (transform (ns,k))
+    Node (L (T.Load i v))      Nil (Some (x,k)) -> W.Load i (trans v) x (transform (ns,k))
+    Node (L (T.Store i s t))   Nil (Some (_,k)) -> W.Store i (trans s) (trans t) (transform (ns,k))
+    Node (R (L (T.Add v1 v2))) Nil (Some (x,k)) -> W.Add (trans v1) (trans v2) x (transform (ns,k))
+    Node (R (L (T.App v vs)))  Nil None         -> W.App (trans v) (map trans vs)
+
+instance Transformable ([Var],Val) Val where
+  transform (ns,LABEL x) = INT (fromJust (x `elemIndex` ns))
+  transform (ns,v)       = v

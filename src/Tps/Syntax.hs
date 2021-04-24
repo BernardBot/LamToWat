@@ -1,3 +1,5 @@
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -41,10 +43,4 @@ liftT op ps x k = Node op ps (Some (x, k))
 liftF :: sig n 'False p r q -> Vec n (Tps sig Val) -> Tps sig a
 liftF op ps = Node op ps None
 
-instance (Show a, ShowSig sig) => Show (Tps sig a) where
-  show (Leaf a)        = "Leaf " ++ parens (show a)
-  show (Node cmd ks k) =
-    "Node " ++
-    parens (showSig cmd) ++ "\n" ++
-    indent (parens (show ks)) ++
-    parens (show k)
+deriving instance (Show a, forall n b p r q. Show (sig n b p r q)) => Show (Tps sig a)

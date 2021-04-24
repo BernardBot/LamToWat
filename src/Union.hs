@@ -29,7 +29,3 @@ instance f :<: g => f :<: (h :+: g) where
   inj = R . inj
 
 deriving instance (Show (sigl n b p r q), Show (sigr n b p r q)) => Show ((sigl :+: sigr) n b p r q)
-
-instance (ShowSig a, ShowSig b) => ShowSig (a :+: b) where
-  showSig (L a) = "L (" ++ showSig a ++ ")"
-  showSig (R a) = "R (" ++ showSig a ++ ")"

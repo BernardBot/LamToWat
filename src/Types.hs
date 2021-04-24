@@ -1,5 +1,8 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Types where
 
@@ -19,12 +22,8 @@ import Text.Parsec.Indent
 -- Signatures --
 ----------------
 data Nat = Z | S Nat
-
 type Sig = Nat -> Bool -> * -> * -> * -> *
 
-class ShowSig (sig :: Sig) where
-  showSig :: sig n b p r q -> String
-  
 ----------
 -- Util --
 ----------
@@ -33,6 +32,8 @@ fresh s = do
   i <- get
   put (i+1)
   return $ "_" ++ s ++ show i
+
+runFresh = fst . flip runState 0
 
 ------------
 -- Parser --
@@ -50,6 +51,16 @@ class Parsable a where
   parseExpr' s = case parseExpr s of
     Right exp -> exp
     Left err -> error $ show err
+
+---------------------
+-- Transformations --
+---------------------
+
+class Transformable a b where
+  transform :: a -> b
+
+instance Transformable a b => Transformable [a] [b] where
+  transform = map transform
 
 -----------------
 -- Definitions --

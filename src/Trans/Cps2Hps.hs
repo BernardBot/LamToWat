@@ -1,49 +1,52 @@
-module Trans.Cps2CpsH where
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
+module Trans.Cps2Hps where
 
 import Control.Monad.Writer
 import Control.Monad.Reader
 
-import Data.Tuple (swap)
+import Data.Tuple
 
 import Types
 
-import Cps.Syntax
-import qualified CpsH.Syntax as H
+import qualified Cps.Syntax as C
+import qualified Hps.Syntax as H
 
-type Cps = Cps.Syntax.Expr
-type CpsH = H.Expr
+type Cps = C.Expr
+type Hps = H.Expr
+type TransM = WriterT [Fun H.Exp] (Reader [Var])
 
-type M =  WriterT [Fun H.Exp] (Reader [Var])
+instance Transformable Cps Hps where
+  transform =
+    swap .
+    flip runReader [] .
+    runWriterT .
+    trans
 
-cps2cpsH :: Cps -> CpsH
-cps2cpsH =
-  swap .
-  flip runReader [] .
-  runWriterT .
-  c2c
-
-c2c :: Cps -> M H.Exp
-c2c (FIX fs e) = do
+trans :: Cps -> TransM H.Exp
+trans (C.FIX fs e) = do
   nv <- ask
   fs' <- mapM (\ (f,as,b) -> do
-        b' <- local (++ as) (c2c b)
+        b' <- local (++ as) (trans b)
         return (f,_nv:as,open b' as nv)) fs
   tell fs'
-  c2c e
-c2c (APP v vs) = do
+  trans e
+trans (C.APP v vs) = do
   nv <- ask
   let vs' = rename vs
   let app = apply v vs'
   return (close app (v:vs) nv)
-c2c (DONE v) = return (H.DONE v)
-c2c (RECORD vs x e)  = do
-  e' <- local (++ [x]) (c2c e)
+trans (C.DONE v) = return (H.DONE v)
+trans (C.RECORD vs x e)  = do
+  e' <- local (++ [x]) (trans e)
   return (H.RECORD vs x e')
-c2c (SELECT i v x e) = do
-  e' <- local (++ [x]) (c2c e)
+trans (C.SELECT i v x e) = do
+  e' <- local (++ [x]) (trans e)
   return (H.SELECT i v x e')
-c2c (ADD v1 v2 x e)  = do
-  e' <- local (++ [x]) (c2c e)
+trans (C.ADD v1 v2 x e)  = do
+  e' <- local (++ [x]) (trans e)
   return (H.ADD v1 v2 x e')
 
 open :: H.Exp -> [Var] -> [Var] -> H.Exp

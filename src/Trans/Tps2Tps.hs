@@ -1,5 +1,9 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 {-# LANGUAGE GADTs #-}
 
 module Trans.Tps2Tps where
@@ -8,7 +12,7 @@ import Data.Maybe
 
 import Control.Monad
 
-import Types (Val(INT,VAR,LABEL),Var)
+import Types (Val(INT,VAR,LABEL),Var,Transformable,transform)
 import qualified Types as T (Fix)
 
 import Option
@@ -19,11 +23,14 @@ import Commands
 import Tps.Syntax
 import Tps.Commands
 
-hClos :: Tps (Fix :+: Base :+: cmd) Val -> Tps (Record :+: Fix :+: Base :+: cmd) Val
-hClos = hClos' []
+type TpsClosA cmd = Tps            (Fix :+: Base :+: cmd) Val
+type TpsClosB cmd = Tps (Record :+: Fix :+: Base :+: cmd) Val
 
-hClos' :: [Var] -> Tps (Fix :+: Base :+: cmd) Val -> Tps (Record :+: Fix :+: Base :+: cmd) Val
-hClos' nv (Node (L (Fix fxs)) bs (Some (_,k))) = do
+instance Transformable (TpsClosA cmd) (TpsClosB cmd) where
+  transform = hClos []
+
+hClos :: [Var] -> Tps (Fix :+: Base :+: cmd) Val -> Tps (Record :+: Fix :+: Base :+: cmd) Val
+hClos nv (Node (L (Fix fxs)) bs (Some (_,k))) = do
   let fxs' = mapV (\ (f,as) -> (f,"_nv":as)) fxs
       bs' = zipWithV (\ (f,as) b -> do
                        select_ 1 (VAR "_nv") "_nv"
@@ -31,10 +38,10 @@ hClos' nv (Node (L (Fix fxs)) bs (Some (_,k))) = do
                                     if x `elem` as
                                     then return ()
                                     else select_ i (VAR "_nv") x) [0..] nv
-                       hClos' (nv ++ as) b) fxs bs
-  fix' fxs' bs' (hClos' nv k)
+                       hClos (nv ++ as) b) fxs bs
+  fix' fxs' bs' (hClos nv k)
 
-hClos' nv (Node (R (L (App v vs))) Nil None) = do
+hClos nv (Node (R (L (App v vs))) Nil None) = do
   record_ (map VAR nv) "_nv"
   vs' <- mapM (\ v -> case v of
                   LABEL f -> do
@@ -51,19 +58,24 @@ hClos' nv (Node (R (L (App v vs))) Nil None) = do
       let fp = "_" ++ f
       select_ 0 v fp
       app (VAR fp) (v:vs')
-hClos' nv (Leaf v) = Leaf v
-hClos' nv (Node cmd ks k) =
-  Node (R cmd) (fmap (hClos' nv) ks) (fmap (\ (x,k) -> (x, hClos' (nv ++ if null x then [] else [x]) k)) k)
+hClos nv (Leaf v) = Leaf v
+hClos nv (Node cmd ks k) =
+  Node (R cmd)
+    (fmap (hClos nv) ks)
+    (fmap (\ (x,k) -> (x, hClos (nv ++ if null x then [] else [x]) k)) k)
 
-hRecord :: Tps (Record :+: cmd) Val -> Tps (Malloc :+: cmd) Val
-hRecord (Node (L (Record vs)) Nil (Some (x,k))) = do
-  malloc_ (length vs) x
-  zipWithM_ (\ i v -> store_ i (VAR x) v) [0..] vs
-  hRecord k
-hRecord (Node (L (Select i v)) Nil (Some (x,k))) =
-  load i v x (hRecord k)
-hRecord (Leaf v) = Leaf v
-hRecord (Node (R cmd) ks k) = Node (R cmd) (fmap hRecord ks) (fmap (fmap hRecord) k)
+instance Transformable (Tps (Record :+: cmd) Val) (Tps (Malloc :+: cmd) Val) where
+  transform (Node (L (Record vs)) Nil (Some (x,k))) = do
+    malloc_ (length vs) x
+    zipWithM_ (\ i v -> store_ i (VAR x) v) [0..] vs
+    transform k
+  transform (Node (L (Select i v)) Nil (Some (x,k))) =
+    load i v x (transform k)
+  transform (Leaf v) = Leaf v
+  transform (Node (R cmd) ks k) = Node (R cmd) (fmap transform ks) (fmap (fmap transform) k)
+
+instance Transformable (Tps (Fix :+: cmd) Val) (T.Fix (Tps cmd Val)) where
+  transform = hFix
 
 hFix :: Tps (Fix :+: cmd) Val -> T.Fix (Tps cmd Val)
 hFix (Leaf v) = ([],Leaf v)

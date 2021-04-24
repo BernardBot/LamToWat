@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module CpsH.Test where
+module Hps.Test where
 
 import Types
 
-import CpsH.Syntax
+import Hps.Syntax
 

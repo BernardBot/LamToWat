@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module CpsH.Syntax where
+module Hps.Syntax where
   
 import Types
 
