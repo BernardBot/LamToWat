@@ -5,7 +5,7 @@ module Hps.Syntax where
   
 import Types
 
-type Hps = Hps.Syntax.Expr
+type Hps = Expr
 
 type Expr = Fix Exp
 
