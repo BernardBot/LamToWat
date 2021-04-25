@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -45,3 +46,9 @@ liftF :: sig n 'False p r q -> Vec n (Tps sig Val) -> Tps sig a
 liftF op ps = Node op ps None
 
 deriving instance (Show a, forall n b p r q. Show (sig n b p r q)) => Show (Tps sig a)
+
+instance Transformable (Tps (l :+: r :+: t) a) (Tps (r :+: l :+: t) a) where
+  transform (Leaf a)                 = Leaf a
+  transform (Node (L    cmd)  ks k) = Node (R (L cmd)) (fmap transform ks) (fmap (fmap transform) k)
+  transform (Node (R (L cmd)) ks k) = Node (L    cmd)  (fmap transform ks) (fmap (fmap transform) k)
+  transform (Node (R (R cmd)) ks k) = Node (R (R cmd)) (fmap transform ks) (fmap (fmap transform) k)

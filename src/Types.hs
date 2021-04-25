@@ -13,6 +13,7 @@ import Text.Parsec
 ----------------
 -- Signatures --
 ----------------
+
 data Nat = Z | S Nat
 type Sig = Nat -> Bool -> * -> * -> * -> *
 
@@ -60,9 +61,6 @@ class PPrintable a where
 
   pprintIO :: a -> IO ()
   pprintIO = putStrLn . pprint
-
-instance PPrintable a => PPrintable [a] where
-  pprint = recs . map pprint
 
 indent :: String -> String
 indent = unlines . map ("  "++) . lines

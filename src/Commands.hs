@@ -27,18 +27,18 @@ data Comp :: Sig where
   SetK   :: Var -> Val ->        Comp Z     True  Val  Val  ()
   Block  ::                      Comp (S Z) True  ()   Val  Val
   Fresh  :: Var ->               Comp Z     True  Void Void Var
-                                                  
-data Record :: Sig where                          
+
+data Record :: Sig where
   Record :: [Val] ->             Record Z   True  Void Void Val
   Select :: Int -> Val ->        Record Z   True  Void Void Val
-                                                  
-data Malloc :: Sig where                          
+
+data Malloc :: Sig where
   Malloc :: Int ->               Malloc Z   True  Void Void Val
   Load   :: Int -> Val ->        Malloc Z   True  Void Void Val
   Store  :: Int -> Val -> Val -> Malloc Z   True  Void Void ()
 
 data Empty :: Sig where
-  
+
 deriving instance Show (Base   n b p r q)
 deriving instance Show (Fix    n b p r q)
 deriving instance Show (Comp   n b p r q)
