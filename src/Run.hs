@@ -46,17 +46,10 @@ lam2wat =
 
 lam2wat' :: Lam -> Wat
 lam2wat' =
-  (transform :: T.Fix (Tps (Malloc :+: Base :+: Empty) Val)
-             -> Wat) .
-  (transform :: Tps (Fix :+: Malloc :+: Base :+: Empty) Val
-             -> T.Fix (Tps (Malloc :+: Base :+: Empty)  Val)) .
-  (transform :: Tps (Malloc :+: Fix :+: Base :+: Empty) Val
-             -> Tps (Fix :+: Malloc :+: Base :+: Empty) Val) .
-  (transform :: Tps (Record :+: Fix :+: Base :+: Empty) Val
-             -> Tps (Malloc :+: Fix :+: Base :+: Empty) Val) .
-  (transform :: Tps            (Fix :+: Base :+: Empty) Val
-             -> Tps (Record :+: Fix :+: Base :+: Empty) Val) .
-  (transform :: Tree  (Comp :+: Fix :+: Base)           Val
-             -> Tps            (Fix :+: Base :+: Empty) Val) .
-  (transform :: Lam
-             -> Tree  (Comp :+: Fix :+: Base)           Val)
+  (transform :: T.Fix (Tps (Malloc :+: Base :+: Empty)  Val) -> Wat) .
+  (transform :: Tps (Fix :+: Malloc :+: Base :+: Empty) Val  -> T.Fix (Tps (Malloc :+: Base :+: Empty)  Val)) .
+  (transform :: Tps (Malloc :+: Fix :+: Base :+: Empty) Val  -> Tps (Fix :+: Malloc :+: Base :+: Empty) Val) .
+  (transform :: Tps (Record :+: Fix :+: Base :+: Empty) Val  -> Tps (Malloc :+: Fix :+: Base :+: Empty) Val) .
+  (transform :: Tps (Fix :+: Base :+: Empty)            Val  -> Tps (Record :+: Fix :+: Base :+: Empty) Val) .
+  (transform :: Tree (Comp :+: Fix :+: Base)            Val  -> Tps (Fix :+: Base :+: Empty)            Val) .
+  (transform :: Lam                                          -> Tree (Comp :+: Fix :+: Base)            Val)
