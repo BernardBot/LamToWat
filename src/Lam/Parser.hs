@@ -9,8 +9,8 @@ import Types hiding (parens,int)
 import Lam.Lexer
 import Lam.Syntax
 
-parseLam' :: StreamP -> Lam
-parseLam' s = case parseLam s of
+str2lam :: String -> Lam
+str2lam s = case parseLam s of
   Right exp -> exp
   Left err -> error $ show err
 
