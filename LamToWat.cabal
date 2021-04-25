@@ -8,12 +8,14 @@ extra-source-files:  README.md
 
 executable lam2wat
   main-is:             Main.hs
-  other-modules:       Types
+  other-modules:       Commands
+                       Interpreter
                        Option
-                       Vec
-                       Union
-                       Commands
                        Run
+                       Types
+                       Union
+                       Val
+                       Vec
 
                        Cps.Syntax
                        Cps.Test
@@ -36,6 +38,7 @@ executable lam2wat
 
                        Trans.Cps2Hps
                        Trans.Hps2Wat
+                       Trans.Lam2Cps
                        Trans.Lam2Tree
                        Trans.Tps2Tps
                        Trans.Tps2Wat
@@ -56,12 +59,14 @@ executable lam2wat
 test-suite lam2test
   type:                detailed-0.9
   test-module:         Test
-  other-modules:       Types
+  other-modules:       Commands
+                       Interpreter
                        Option
-                       Vec
-                       Union
-                       Commands
                        Run
+                       Types
+                       Union
+                       Val
+                       Vec
 
                        Cps.Syntax
                        Cps.Test
@@ -84,6 +89,7 @@ test-suite lam2test
 
                        Trans.Cps2Hps
                        Trans.Hps2Wat
+                       Trans.Lam2Cps
                        Trans.Lam2Tree
                        Trans.Tps2Tps
                        Trans.Tps2Wat
@@ -98,7 +104,6 @@ test-suite lam2test
                        mtl >= 2.2.2,
                        parsec >= 3.1.14.0,
                        shake >= 0.19.4
-
   hs-source-dirs:      src
                        test
   default-language:    Haskell2010
