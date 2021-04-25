@@ -20,9 +20,6 @@ executable lam2wat
                        Cps.Syntax
                        Cps.Test
 
-                       Hps.Syntax
-                       Hps.Test
-
                        Lam.Lexer
                        Lam.Parser
                        Lam.Syntax
@@ -36,8 +33,8 @@ executable lam2wat
                        Tree.Syntax
                        Tree.Test
 
-                       Trans.Cps2Hps
-                       Trans.Hps2Wat
+                       Trans.Cps2Cps
+                       Trans.Cps2Wat
                        Trans.Lam2Cps
                        Trans.Lam2Tree
                        Trans.Tps2Tps
@@ -72,9 +69,6 @@ test-suite lam2test
                        Cps.Syntax
                        Cps.Test
 
-                       Hps.Syntax
-                       Hps.Test
-
                        Lam.Lexer
                        Lam.Parser
                        Lam.Syntax
@@ -88,8 +82,8 @@ test-suite lam2test
                        Tree.Syntax
                        Tree.Test
 
-                       Trans.Cps2Hps
-                       Trans.Hps2Wat
+                       Trans.Cps2Cps
+                       Trans.Cps2Wat
                        Trans.Lam2Cps
                        Trans.Lam2Tree
                        Trans.Tps2Tps

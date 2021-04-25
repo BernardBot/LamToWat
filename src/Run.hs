@@ -18,15 +18,14 @@ import Lam.Parser
 
 import Lam.Syntax
 import Cps.Syntax
-import Hps.Syntax
 import Wat.Syntax
 
 import Tree.Syntax
 import Tps.Syntax
 
 import Trans.Lam2Cps
-import Trans.Cps2Hps
-import Trans.Hps2Wat
+import Trans.Cps2Cps
+import Trans.Cps2Wat
 
 import Trans.Lam2Tree
 import Trans.Tree2Tps
@@ -49,7 +48,7 @@ runWatFile watfile wasmfile = do
         wasminterp = "/Users/ben/wabt/bin/wasm-interp"
 
 lam2wat :: Lam -> Wat
-lam2wat = hps2wat . cps2hps. lam2cps
+lam2wat = cps2wat . cps2cps. lam2cps
 
 lam2wat' :: Lam -> Wat
 lam2wat' = tps2wat . tps2tps . tree2tps . lam2tree

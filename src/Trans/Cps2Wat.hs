@@ -1,15 +1,15 @@
-module Trans.Hps2Wat where
+module Trans.Cps2Wat where
 
 import Val
 
 import Data.Maybe
 import Data.List
 
-import Hps.Syntax
+import Cps.Syntax
 import Wat.Syntax
 
-hps2wat :: Hps -> Wat
-hps2wat (fs,e) = (map (fmap exp2wat) fs,exp2wat e)
+cps2wat :: Cps -> Wat
+cps2wat (FIX fs e) = (map (fmap exp2wat) fs,exp2wat e)
     where ns = map (\ (f,as,b) -> f) fs
 
           exp2wat (DONE v)         = Done (val2wat v)
