@@ -4,7 +4,10 @@ import Distribution.TestSuite
 
 import System.Directory
 
-import Run
+import Interpreter (run0)
+import Run (lam2wat,lam2wat')
+
+import Lam.Parser (parseLam)
 
 testDir :: FilePath
 testDir = "./test"
@@ -21,7 +24,7 @@ tests = do
   testfiles <- mapM readFile testfilenames
   return $ zipWith
     (\ filename file -> Test $ TestInstance
-       { run = testAllResult file
+       { run = testIt file
        , name = filename
        , tags = []
        , options = []
@@ -30,28 +33,12 @@ tests = do
     testfilenames
     testfiles
 
-testAllResult :: String -> IO Progress
-testAllResult str = case testAll str of
-      True  -> return (Finished Pass)
-      False -> return (Finished (Fail (show (runToInts str))))
-
-runToInts :: String -> [Int]
-runToInts str = map ($str) toInts
-
-testAll :: String -> Bool
-testAll = allEq . runToInts
-
-toInts :: [String -> Int]
-toInts = [ str2lam2int
-         , str2cps2int
-         , str2ccps2int
-         , str2cwat2int
-         , str2twat2int
-         ]
-
-allEq :: Eq a => [a] -> Bool
-allEq []     = True
-allEq (x:xs) = go xs
-  where go []     = True
-        go (y:xs) = if x == y then go xs else False
-        
+testIt :: String -> IO Progress
+testIt str = case parseLam str of
+  Left err -> return $ Finished $ Fail $ show err
+  Right exp ->
+    let w = lam2wat exp; r = run0 w
+        w' = lam2wat' exp; r' = run0 w'
+    in if r == r'
+       then return $ Finished Pass
+       else return $ Finished $ Fail $ show r ++ " " ++ show r'

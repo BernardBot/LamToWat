@@ -38,12 +38,14 @@ runWatFile watfile wasmfile = do
   where wat2wasm = "/Users/ben/wabt/bin/wat2wasm"
         wasminterp = "/Users/ben/wabt/bin/wasm-interp"
 
-transCps =
+lam2wat :: Lam -> Wat
+lam2wat =
   (transform :: Hps -> Wat) .
   (transform :: Cps -> Hps) .
   (transform :: Lam -> Cps)
 
-transTps =
+lam2wat' :: Lam -> Wat
+lam2wat' =
   (transform :: T.Fix (Tps (Malloc :+: Base :+: Empty) Val)
              -> Wat) .
   (transform :: Tps (Fix :+: Malloc :+: Base :+: Empty) Val

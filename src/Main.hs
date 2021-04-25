@@ -11,4 +11,4 @@ main :: IO ()
 main = do
   [file,out] <- getArgs
   f <- readFile file
-  writeFile "./test.wat" $ pprint $ transTps $ parseLam' f
+  writeFile "./test.wat" $ pprint $ lam2wat' $ parseLam' f
