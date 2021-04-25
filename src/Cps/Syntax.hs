@@ -36,7 +36,7 @@ instance Interpretable Cps where
   interp (DONE v) = interp v
 
 instance PPrintable Cps where
-  pprint (APP v vs)       = pprint v ++ args (map pprint vs)
+  pprint (APP v vs)       = "return " ++ pprint v ++ args (map pprint vs)
   pprint (DONE v)         = "return " ++ pprint v
   pprint (ADD v1 v2 x e)  = assign x (pprint v1 ++ " + " ++ pprint v2)  ++ pprint e
   pprint (RECORD vs x e)  = assign x (recs (map pprint vs)            ) ++ pprint e

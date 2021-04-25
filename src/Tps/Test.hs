@@ -13,6 +13,8 @@ import Union
 import Tps.Syntax
 import Tps.Commands
 
+import Text.Show.Pretty
+
 e0 :: Tps (Fix :+: Base) a
 e0 = 
     Node (L (Fix (("f", ["x"]) ::: Nil)))
