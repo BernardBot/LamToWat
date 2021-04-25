@@ -1,15 +1,12 @@
 module Trans.Hps2Wat where
 
 import Val
-import Types (Var)
 
 import Data.Maybe
 import Data.List
 
 import Hps.Syntax
 import Wat.Syntax
-
-type FuncNames = [Var]
 
 hps2wat :: Hps -> Wat
 hps2wat (fs,e) = (map (fmap exp2wat) fs,exp2wat e)

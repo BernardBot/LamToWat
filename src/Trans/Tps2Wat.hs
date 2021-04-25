@@ -7,7 +7,7 @@ import Data.List
 import Data.Maybe
 
 import Val
-import Types
+import Types (Fix)
 
 import Option
 import Vec
@@ -20,11 +20,7 @@ import qualified Wat.Syntax as W
 import Tps.Syntax
 import Wat.Syntax
 
-type WatTps = Tps (Malloc :+: Base :+: Empty) Val
-
-type FuncNames = [Var]
-
-tps2wat :: Fix WatTps -> Wat
+tps2wat :: Fix (Tps (Malloc :+: Base :+: Empty) Val) -> Wat
 tps2wat (fs,e) = (map (fmap tps2wat') fs,tps2wat' e)
     where ns = map (\ (f,as,b) -> f) fs
 
