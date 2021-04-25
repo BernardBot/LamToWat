@@ -4,7 +4,7 @@ import Text.Parsec
 import Text.Parsec.Expr
 
 import Val
-import Types hiding (letin,parens,int)
+import Types hiding (parens,int)
 
 import Lam.Lexer
 import Lam.Syntax
@@ -24,8 +24,6 @@ table :: OperatorTable StreamP UserStateP MonadP Lam
 table = [[binary ""  App AssocLeft]
         ,[binary "+" Add AssocLeft]]
   where binary  op f = Infix   $ reservedOp op >> return f
-        prefix  op f = Prefix  $ reservedOp op >> return f
-        postfix op f = Postfix $ reservedOp op >> return f
 
 term :: Parser Lam
 term = choice
@@ -37,8 +35,8 @@ term = choice
 
 val :: Parser Lam
 val = Val <$> choice
-  [ try var
-  , int
+  [ try $ VAR <$> identifier
+  , INT <$> fromInteger <$> integer
   ]
 
 lam :: Parser Lam
@@ -58,11 +56,3 @@ letin = do
   reserved "in"
   e2 <- expr
   return $ App (Lam x e2) e1
-
--- Val parser
-
-var :: Parser Val
-var = VAR <$> identifier
-
-int :: Parser Val
-int = INT <$> fromInteger <$> integer
