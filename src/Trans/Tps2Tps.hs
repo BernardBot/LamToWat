@@ -1,9 +1,5 @@
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-
 {-# LANGUAGE GADTs #-}
 
 module Trans.Tps2Tps where
@@ -13,7 +9,6 @@ import Data.Maybe
 import Control.Monad
 
 import Val
-import Types (Var,Transformable,transform)
 import qualified Types as T (Fix)
 
 import Option
@@ -24,14 +19,13 @@ import Commands
 import Tps.Syntax
 import Tps.Commands
 
-type TpsClosA cmd v = Tps            (Fix :+: Base :+: cmd) v
-type TpsClosB cmd v = Tps (Record :+: Fix :+: Base :+: cmd) v
+tps2tps = hFix . swapTps . hRecord . hClos
 
-instance Transformable (TpsClosA cmd v) (TpsClosB cmd v) where
-  transform = transClos []
+hClos :: Tps (Fix :+: Base :+: cmd) Val -> Tps (Record :+: Fix :+: Base :+: cmd) Val
+hClos = hClos' []
 
-transClos :: [Var] -> Tps (Fix :+: Base :+: cmd) v -> Tps (Record :+: Fix :+: Base :+: cmd) v
-transClos nv (Node (L (Fix fxs)) bs (Some (_,k))) = do
+hClos' :: [String] -> Tps (Fix :+: Base :+: cmd) Val -> Tps (Record :+: Fix :+: Base :+: cmd) Val
+hClos' nv (Node (L (Fix fxs)) bs (Some (_,k))) = do
   let fxs' = mapV (\ (f,as) -> (f,"_nv":as)) fxs
       bs' = zipWithV (\ (f,as) b -> do
                        select_ 1 (VAR "_nv") "_nv"
@@ -39,10 +33,10 @@ transClos nv (Node (L (Fix fxs)) bs (Some (_,k))) = do
                                     if x `elem` as
                                     then return ()
                                     else select_ i (VAR "_nv") x) [0..] nv
-                       transClos (nv ++ as) b) fxs bs
-  fix' fxs' bs' (transClos nv k)
+                       hClos' (nv ++ as) b) fxs bs
+  fix' fxs' bs' (hClos' nv k)
 
-transClos nv (Node (R (L (App v vs))) Nil None) = do
+hClos' nv (Node (R (L (App v vs))) Nil None) = do
   record_ (map VAR nv) "_nv"
   vs' <- mapM (\ v -> case v of
                   LABEL f -> do
@@ -59,31 +53,26 @@ transClos nv (Node (R (L (App v vs))) Nil None) = do
       let fp = "_" ++ f
       select_ 0 v fp
       app (VAR fp) (v:vs')
-transClos nv (Leaf v) = Leaf v
-transClos nv (Node cmd ks k) =
-  Node (R cmd)
-    (fmap (transClos nv) ks)
-    (fmap (\ (x,k) -> (x, transClos (nv ++ if null x then [] else [x]) k)) k)
+hClos' nv (Leaf v) = Leaf v
+hClos' nv (Node cmd ks k) =
+  Node (R cmd) (fmap (hClos' nv) ks) (fmap (\ (x,k) -> (x, hClos' (nv ++ if null x then [] else [x]) k)) k)
 
-instance Transformable (Tps (Record :+: cmd) v) (Tps (Malloc :+: cmd) v) where
-  transform (Node (L (Record vs)) Nil (Some (x,k))) = do
-    malloc_ (length vs) x
-    zipWithM_ (\ i v -> store_ i (VAR x) v) [0..] vs
-    transform k
-  transform (Node (L (Select i v)) Nil (Some (x,k))) =
-    load i v x (transform k)
-  transform (Leaf v) = Leaf v
-  transform (Node (R cmd) ks k) = Node (R cmd) (fmap transform ks) (fmap (fmap transform) k)
+hRecord :: Tps (Record :+: cmd) Val -> Tps (Malloc :+: cmd) Val
+hRecord (Node (L (Record vs)) Nil (Some (x,k))) = do
+  malloc_ (length vs) x
+  zipWithM_ (\ i v -> store_ i (VAR x) v) [0..] vs
+  hRecord k
+hRecord (Node (L (Select i v)) Nil (Some (x,k))) =
+  load i v x (hRecord k)
+hRecord (Leaf v) = Leaf v
+hRecord (Node (R cmd) ks k) = Node (R cmd) (fmap hRecord ks) (fmap (fmap hRecord) k)
 
-instance Transformable (Tps (Fix :+: cmd) Val) (T.Fix (Tps cmd Val)) where
-  transform = transFix
-
-transFix :: Tps (Fix :+: cmd) Val -> T.Fix (Tps cmd Val)
-transFix (Leaf v) = ([],Leaf v)
-transFix (Node (R cmd) ks k) = case fmap (fmap transFix) k of
+hFix :: Tps (Fix :+: cmd) Val -> ([(String,[String],Tps cmd Val)],Tps cmd Val)
+hFix (Leaf v) = ([],Leaf v)
+hFix (Node (R cmd) ks k) = case fmap (fmap hFix) k of
   Some (x,(fs,k')) -> (fs++fs',Node cmd ks' (Some (x,k')))
-  None -> (fs',Node cmd ks' None)
-  where ks' = fmap (snd . transFix) ks
-        fs' = concat (toList (fmap (fst . transFix) ks))
-transFix (Node (L (Fix fxs)) bs (Some ("", k))) = let (fs,k') = transFix k in (fs'++fs,k')
-  where fs' = concatMap (\ ((f,as),b) -> let (fs,b') = transFix b in (f,as,b') : fs) (zip (toList fxs) (toList bs))
+  None             -> (    fs',Node cmd ks' None)
+  where ks' = fmap (snd . hFix) ks
+        fs' = concat (toList (fmap (fst . hFix) ks))
+hFix (Node (L (Fix fxs)) bs (Some ("", k))) = let (fs,k') = hFix k in (fs'++fs,k')
+  where fs' = concatMap (\ ((f,as),b) -> let (fs,b') = hFix b in (f,as,b') : fs) (zip (toList fxs) (toList bs))

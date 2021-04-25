@@ -47,8 +47,8 @@ liftF op ps = Node op ps None
 
 deriving instance (Show a, forall n b p r q. Show (sig n b p r q)) => Show (Tps sig a)
 
-instance Transformable (Tps (l :+: r :+: t) a) (Tps (r :+: l :+: t) a) where
-  transform (Leaf a)                 = Leaf a
-  transform (Node (L    cmd)  ks k) = Node (R (L cmd)) (fmap transform ks) (fmap (fmap transform) k)
-  transform (Node (R (L cmd)) ks k) = Node (L    cmd)  (fmap transform ks) (fmap (fmap transform) k)
-  transform (Node (R (R cmd)) ks k) = Node (R (R cmd)) (fmap transform ks) (fmap (fmap transform) k)
+swapTps :: Tps (l :+: r :+: t) a -> Tps (r :+: l :+: t) a
+swapTps (Leaf a)                = Leaf a
+swapTps (Node (L    cmd)  ks k) = Node (R (L cmd)) (fmap swapTps ks) (fmap (fmap swapTps) k)
+swapTps (Node (R (L cmd)) ks k) = Node (L    cmd)  (fmap swapTps ks) (fmap (fmap swapTps) k)
+swapTps (Node (R (R cmd)) ks k) = Node (R (R cmd)) (fmap swapTps ks) (fmap (fmap swapTps) k)

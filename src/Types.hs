@@ -37,13 +37,6 @@ type UserStateP = ()
 type MonadP = Identity
 type Parser a = ParsecT StreamP UserStateP MonadP a 
 
----------------------
--- Transformations --
----------------------
-
-class Transformable a b where
-  transform :: a -> b
-
 -----------------
 -- Definitions --
 -----------------
