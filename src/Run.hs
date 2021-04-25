@@ -14,6 +14,8 @@ import Union
 import Types hiding (Fix)
 import qualified Types as T (Fix)
 
+import Lam.Parser
+
 import Lam.Syntax
 import Cps.Syntax
 import Hps.Syntax
@@ -30,6 +32,14 @@ import Trans.Lam2Tree
 import Trans.Tree2Tps
 import Trans.Tps2Tps
 import Trans.Tps2Wat
+
+compile :: FilePath -> FilePath -> IO ()
+compile file outFile = do
+  fileContents <- readFile file
+  case parseLam fileContents of
+    Left err -> print err
+    Right exp -> writeFile outFile $ pprint $ lam2wat' exp
+
 
 runWatFile :: FilePath -> FilePath -> IO ()
 runWatFile watfile wasmfile = do

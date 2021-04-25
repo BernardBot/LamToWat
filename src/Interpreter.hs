@@ -19,10 +19,12 @@ type Heap = (Pointer,[Dom])
 type Error = String
 instance MonadFail (Either Error) where
   fail = Left
+
 -- Monad Transformer
 type InterpM = StateT Heap (ReaderT Env (Either Error))
 type EDom = Either Error Dom
 type IDom = InterpM Dom
+
 -- Domain
 data Dom
   = Record [Dom]

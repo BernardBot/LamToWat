@@ -9,6 +9,17 @@ import Lam.Parser
 
 main :: IO ()
 main = do
-  [file,out] <- getArgs
-  f <- readFile file
-  writeFile "./test.wat" $ pprint $ lam2wat' $ parseLam' f
+  args <- getArgs
+  case args of
+    [file,"run"] -> do
+      compile file "./temp.wat"
+      runWatFile "./temp.wat" "./temp.wasm"
+    [file,outFile,"run"] -> do
+      compile file outFile
+      runWatFile outFile "./temp.wasm"
+
+    [file]         -> compile file "./temp.wat"
+    [file,outFile] -> compile file outFile
+
+    _ -> putStrLn "use lam2wat like: lam2wat file [outputfile] [run]"
+
