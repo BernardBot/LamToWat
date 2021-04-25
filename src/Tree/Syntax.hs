@@ -14,6 +14,7 @@ import Data.Void
 import Control.Monad
 import Control.Monad.State
 
+import Val
 import Types hiding (Fix)
 import Vec
 import Option

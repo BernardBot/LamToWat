@@ -1,15 +1,17 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+
 module Wat.Syntax where
 
 import Data.List
 
 import Control.Monad
 
+import Val
+import Interpreter
 import Types
 
-type Wat = Expr
-type Expr = Fix Exp
+type Wat = Fix Exp
 
 type Offset = Int
 data Exp
@@ -21,7 +23,7 @@ data Exp
   | Done Val
   deriving (Eq,Show)
 
-instance Interpretable Expr where
+instance Interpretable Wat where
   interp (fs,e) = do
     malloc (length fs)
     zipWithM_
@@ -55,7 +57,7 @@ instance Interpretable Exp where
     f ds
   interp (Done v) = interp v
 
-instance PPrintable Expr where
+instance PPrintable Wat where
   pprint (fs,e) =
     "(module\n" ++
     "(memory 1)\n" ++

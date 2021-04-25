@@ -2,6 +2,7 @@
 
 module Tps.Test where
 
+import Val
 import Types hiding (Fix)
 
 import Option

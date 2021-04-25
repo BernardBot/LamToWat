@@ -6,7 +6,8 @@
 
 module Tree.Commands where
 
-import Types (Val,Var)
+import Val
+import Types (Var)
 
 import Vec
 import Union

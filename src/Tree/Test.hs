@@ -1,5 +1,6 @@
 module Tree.Test where
 
+import Val
 import Types
 
 import Tree.Syntax

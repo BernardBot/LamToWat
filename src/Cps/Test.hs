@@ -2,11 +2,12 @@
 
 module Cps.Test where
 
+import Val
 import Types
 
 import Cps.Syntax
 
-es :: [Expr]
+es :: [Cps]
 es =
   [ DONE (INT 42)
 

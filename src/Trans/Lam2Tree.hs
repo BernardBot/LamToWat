@@ -5,7 +5,8 @@
 
 module Trans.Lam2Tree where
 
-import Types (Val(INT,VAR,LABEL),Transformable,transform)
+import Val
+import Types (Transformable,transform)
 import Union
 import Vec
 import Commands (Comp,Fix,Base)

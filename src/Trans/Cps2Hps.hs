@@ -9,6 +9,7 @@ import Control.Monad.Reader
 
 import Data.Tuple
 
+import Val
 import Types
 
 import Cps.Syntax

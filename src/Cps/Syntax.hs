@@ -3,20 +3,20 @@
 
 module Cps.Syntax where
   
+import Val
+import Interpreter
 import Types
 
-type Cps = Expr
-
-data Expr
+data Cps
   = APP Val [Val]
   | DONE Val
-  | RECORD [Val] Var Expr
-  | SELECT Int Val Var Expr
-  | ADD Val Val Var Expr
-  | FIX [Fun Expr] Expr
+  | RECORD [Val] Var Cps
+  | SELECT Int Val Var Cps
+  | ADD Val Val Var Cps
+  | FIX [Fun Cps] Cps
   deriving (Eq,Show)
 
-instance Interpretable Expr where
+instance Interpretable Cps where
   interp (FIX fs e) =
     fix (map (fmap interp) fs,interp e)
   interp (APP v vs) = do
@@ -35,7 +35,7 @@ instance Interpretable Expr where
     letin x (ds !! i) (interp e)
   interp (DONE v) = interp v
 
-instance PPrintable Expr where
+instance PPrintable Cps where
   pprint (APP v vs)       = pprint v ++ args (map pprint vs)
   pprint (DONE v)         = "return " ++ pprint v
   pprint (ADD v1 v2 x e)  = assign x (pprint v1 ++ " + " ++ pprint v2) ++ pprint e
@@ -43,6 +43,6 @@ instance PPrintable Expr where
   pprint (SELECT n v x e) = assign x (pprint v ++ "[" ++ show n ++ "]") ++ pprint e
   pprint (FIX fs e)       = concatMap pprint fs ++ pprint e
 
-instance PPrintable (Fun Expr) where
+instance PPrintable (Fun Cps) where
   pprint (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (pprint b)
 

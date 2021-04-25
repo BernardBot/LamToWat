@@ -12,6 +12,7 @@ module Tps.Syntax where
 
 import Control.Monad
 
+import Val
 import Types
 
 import Option

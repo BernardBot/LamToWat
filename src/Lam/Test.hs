@@ -1,10 +1,11 @@
 module Lam.Test where
 
+import Val
 import Types
 import Lam.Syntax
 import Lam.Parser
 
-es :: [Expr]
+es :: [Lam]
 es =
   [ Val (INT 42)
 

@@ -12,7 +12,8 @@ import Data.Maybe
 
 import Control.Monad
 
-import Types (Val(INT,VAR,LABEL),Var,Transformable,transform)
+import Val
+import Types (Var,Transformable,transform)
 import qualified Types as T (Fix)
 
 import Option

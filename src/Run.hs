@@ -28,7 +28,7 @@ runWatFile watfile wasmfile = do
   where wat2wasm = "/Users/ben/wabt/bin/wat2wasm"
         wasminterp = "/Users/ben/wabt/bin/wasm-interp"
 
-foo :: Lam.Syntax.Expr -> Wat.Syntax.Expr
+foo :: Lam -> Wat
 foo =
   (transform :: Hps -> Wat) .
   (transform :: Cps -> Hps) .

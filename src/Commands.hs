@@ -9,6 +9,7 @@ module Commands where
 
 import Data.Void
 
+import Val
 import Types hiding (Fix,Record)
 
 import Option

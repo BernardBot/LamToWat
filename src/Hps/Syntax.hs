@@ -3,11 +3,11 @@
 
 module Hps.Syntax where
   
+import Val
+import Interpreter
 import Types
 
-type Hps = Expr
-
-type Expr = Fix Exp
+type Hps = Fix Exp
 
 data Exp
   = APP Val [Val]
@@ -17,7 +17,7 @@ data Exp
   | ADD Val Val Var Exp
   deriving (Eq,Show)
 
-instance Interpretable Expr where
+instance Interpretable Hps where
   interp (fs,e) = fix (map (fmap interp) fs,interp e)
 
 instance Interpretable Exp where
@@ -37,7 +37,7 @@ instance Interpretable Exp where
     letin x (ds !! i) (interp e)
   interp (DONE v) = interp v
 
-instance PPrintable Expr where
+instance PPrintable Hps where
   pprint (fs,e) = concatMap pprint fs ++ pprint e
 
 instance PPrintable (Fun Exp) where

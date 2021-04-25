@@ -1,17 +1,17 @@
 module Lam.Syntax where
 
+import Val
+import Interpreter
 import Types
 
-type Lam = Expr
-
-data Expr
-  = Lam Var Expr
-  | App Expr Expr
-  | Add Expr Expr
+data Lam
+  = Lam Var Lam
+  | App Lam Lam
+  | Add Lam Lam
   | Val Val
   deriving (Eq,Show)
 
-instance Interpretable Expr where
+instance Interpretable Lam where
   interp (Val v) = interp v
   interp (App e1 e2) = do
     Fun f <- interp e1
@@ -22,7 +22,7 @@ instance Interpretable Expr where
     Int j <- interp e2
     int $ i + j
 
-instance PPrintable Expr where
+instance PPrintable Lam where
   pprint (Val v) = pprint v
   pprint (App e1 e2) = pprint e1 ++ " " ++
     case e2 of

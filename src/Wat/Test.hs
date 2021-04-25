@@ -1,10 +1,11 @@
 module Wat.Test where
 
+import Val
 import Types
 
 import Wat.Syntax
 
-e0 :: Expr
+e0 :: Wat
 e0 =
   ([("f",["x"],
      Add (VAR "x") (INT 1) "r" $

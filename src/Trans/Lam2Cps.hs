@@ -7,6 +7,7 @@ module Trans.Lam2Cps where
 import Control.Monad.Cont
 import Control.Monad.State
 
+import Val
 import Types
 
 import Lam.Syntax

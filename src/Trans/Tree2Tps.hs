@@ -6,7 +6,8 @@
 
 module Trans.Tree2Tps where
 
-import Types (Val(INT,VAR,LABEL),fresh,Transformable,transform)
+import Val
+import Types (fresh,Transformable,transform)
 import Vec
 import Option
 import Commands
