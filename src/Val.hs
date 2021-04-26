@@ -30,8 +30,3 @@ instance IsString Val where
     | isDigit x = INT $ read s
     | x == '$'  = LABEL s
     | otherwise = VAR s
-
-pointify :: Val -> [Var] -> Val
-pointify val fps
-  | LABEL fp <- val = INT $ fromJust $ fp `elemIndex` fps
-  | otherwise       = val
