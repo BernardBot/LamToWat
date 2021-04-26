@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE GADTs #-}
 
-module Trans.Tps2Wat where
+module CTree.Tps2Wat where
 
 import Data.List
 import Data.Maybe
@@ -9,16 +9,16 @@ import Data.Maybe
 import Val
 import Types (Fix)
 
-import Option
-import Vec
-import Union
-import Commands hiding (Fix)
+import CTree.Option
+import CTree.Vec
+import CTree.Union
+import CTree.Commands hiding (Fix)
 
-import qualified Commands as T
-import qualified Wat.Syntax as W
+import qualified CTree.Commands as T
+import qualified Wat as W
 
-import Tps.Syntax
-import Wat.Syntax
+import CTree.Tps
+import Wat
 
 tps2wat :: Fix (Tps (Malloc :+: Base :+: Empty) Val) -> Wat
 tps2wat (fs,e) = (map (fmap tps2wat') fs,tps2wat' e)

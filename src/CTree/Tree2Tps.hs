@@ -1,20 +1,20 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE GADTs #-}
 
-module Trans.Tree2Tps where
+module CTree.Tree2Tps where
 
 import Val
 import Types (fresh)
-import Vec
-import Option
-import Commands
-import Union
 
-import Tree.Syntax
-import qualified Tree.Commands as T (app)
+import CTree.Vec
+import CTree.Option
+import CTree.Commands
+import CTree.Union
 
-import Tps.Syntax (Tps)
-import Tps.Commands
+import CTree.Tree (Tree(Leaf,Node))
+import qualified CTree.Tree as T (app)
+
+import CTree.Tps hiding (Leaf,Node)
 
 import Control.Monad.State (StateT,runStateT)
 import Control.Monad.Reader (Reader,runReader,ask,local)

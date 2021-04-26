@@ -9,7 +9,7 @@ import System.Directory
 import Interpreter (run0)
 import Run (lam2wat,lam2wat')
 
-import Lam.Parser (parseLam)
+import Lam (parseLam)
 
 testDir :: FilePath
 testDir = "./test"

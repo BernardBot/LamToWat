@@ -1,16 +1,14 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Trans.Lam2Tree where
+module CTree.Lam2Tree where
 
 import Val
-import Union
-import Vec
-import Commands (Comp,Fix,Base)
+import CTree.Union
+import CTree.Vec
+import CTree.Commands (Comp,Fix,Base)
 
-import Tree.Syntax
-import Tree.Commands
-
-import Lam.Syntax
+import CTree.Tree
+import Lam
 
 lam2tree :: Lam -> Tree (Comp :+: Fix :+: Base) Val
 lam2tree (Val v) = return v

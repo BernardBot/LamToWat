@@ -5,15 +5,15 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 
-module Commands where
+module CTree.Commands where
 
 import Data.Void
 
 import Val
 import Types hiding (Fix,Record)
 
-import Option
-import Vec
+import CTree.Option
+import CTree.Vec
 
 data Base :: Sig where
   Add    :: Val -> Val ->        Base Z     True  Void Void Val

@@ -1,11 +1,11 @@
-module Trans.Cps2Wat where
+module Cont.Cps2Wat where
 
 import Types (Var)
 
 import Val
 
-import Cps.Syntax
-import Wat.Syntax
+import Cont.Cps
+import Wat
 
 cps2wat :: Cps -> Wat
 cps2wat (FIX fs e) = (map (fmap c2w) fs,c2w e)

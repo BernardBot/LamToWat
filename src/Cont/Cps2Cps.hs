@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
-module Trans.Cps2Cps where
+module Cont.Cps2Cps where
 
 import Control.Monad.Writer
 import Control.Monad.Reader
@@ -9,7 +9,7 @@ import Data.Tuple
 import Val
 import Types
 
-import Cps.Syntax
+import Cont.Cps
 
 type TransM = WriterT [Fun Cps] (Reader [Var])
 

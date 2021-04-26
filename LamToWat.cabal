@@ -8,41 +8,29 @@ extra-source-files:  README.md
 
 executable lam2wat
   main-is:             Main.hs
-  other-modules:       Commands
-                       Interpreter
-                       Option
+  other-modules:       Interpreter
+                       Lam
                        Run
                        Types
-                       Union
                        Val
-                       Vec
+                       Wat
 
-                       Cps.Syntax
-                       Cps.Test
+                       CTree.Commands
+                       CTree.Lam2Tree
+                       CTree.Option
+                       CTree.Tps
+                       CTree.Tps2Tps
+                       CTree.Tps2Wat
+                       CTree.Tree
+                       CTree.Tree2Tps
+                       CTree.Union
+                       CTree.Vec
+                       CTree.Tree2Tps
 
-                       Lam.Lexer
-                       Lam.Parser
-                       Lam.Syntax
-                       Lam.Test
-
-                       Tps.Commands
-                       Tps.Syntax
-                       Tps.Test
-
-                       Tree.Commands
-                       Tree.Syntax
-                       Tree.Test
-
-                       Trans.Cps2Cps
-                       Trans.Cps2Wat
-                       Trans.Lam2Cps
-                       Trans.Lam2Tree
-                       Trans.Tps2Tps
-                       Trans.Tps2Wat
-                       Trans.Tree2Tps
-
-                       Wat.Syntax
-                       Wat.Test
+                       Cont.Cps
+                       Cont.Cps2Cps
+                       Cont.Cps2Wat
+                       Cont.Lam2Cps
 
   build-depends:       Cabal >= 3.0.1.0,
                        base >= 4.13,
@@ -57,41 +45,29 @@ executable lam2wat
 test-suite lam2test
   type:                detailed-0.9
   test-module:         Test
-  other-modules:       Commands
-                       Interpreter
-                       Option
+  other-modules:       Interpreter
+                       Lam
                        Run
                        Types
-                       Union
                        Val
-                       Vec
+                       Wat
 
-                       Cps.Syntax
-                       Cps.Test
+                       CTree.Commands
+                       CTree.Lam2Tree
+                       CTree.Option
+                       CTree.Tps
+                       CTree.Tps2Tps
+                       CTree.Tps2Wat
+                       CTree.Tree
+                       CTree.Tree2Tps
+                       CTree.Union
+                       CTree.Vec
+                       CTree.Tree2Tps
 
-                       Lam.Lexer
-                       Lam.Parser
-                       Lam.Syntax
-                       Lam.Test
-
-                       Tps.Commands
-                       Tps.Syntax
-                       Tps.Test
-
-                       Tree.Commands
-                       Tree.Syntax
-                       Tree.Test
-
-                       Trans.Cps2Cps
-                       Trans.Cps2Wat
-                       Trans.Lam2Cps
-                       Trans.Lam2Tree
-                       Trans.Tps2Tps
-                       Trans.Tps2Wat
-                       Trans.Tree2Tps
-
-                       Wat.Syntax
-                       Wat.Test
+                       Cont.Cps
+                       Cont.Cps2Cps
+                       Cont.Cps2Wat
+                       Cont.Lam2Cps
 
   build-depends:       Cabal >= 3.0.1.0,
                        base >= 4.13,

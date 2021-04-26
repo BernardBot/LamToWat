@@ -6,7 +6,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Union where
+module CTree.Union where
 
 import Types
 

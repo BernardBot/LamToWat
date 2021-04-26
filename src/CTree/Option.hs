@@ -4,7 +4,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 
-module Option where
+module CTree.Option where
 
 data Option :: Bool -> * -> * where
   Some :: a -> Option True a

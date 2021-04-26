@@ -8,29 +8,24 @@ module Run where
 
 import Development.Shake
 
-import Val
-import Commands
-import Union
-import Types hiding (Fix)
-import qualified Types as T (Fix)
+import Types (pprint)
 
-import Lam.Parser
+import Lam
+import Wat
 
-import Lam.Syntax
-import Cps.Syntax
-import Wat.Syntax
+import Cont.Cps
 
-import Tree.Syntax
-import Tps.Syntax
+import CTree.Tree
+import CTree.Tps
 
-import Trans.Lam2Cps
-import Trans.Cps2Cps
-import Trans.Cps2Wat
+import Cont.Lam2Cps
+import Cont.Cps2Cps
+import Cont.Cps2Wat
 
-import Trans.Lam2Tree
-import Trans.Tree2Tps
-import Trans.Tps2Tps
-import Trans.Tps2Wat
+import CTree.Lam2Tree
+import CTree.Tree2Tps
+import CTree.Tps2Tps
+import CTree.Tps2Wat
 
 compile :: FilePath -> FilePath -> IO ()
 compile file outFile = do
@@ -38,7 +33,6 @@ compile file outFile = do
   case parseLam fileContents of
     Left err -> print err
     Right exp -> writeFile outFile $ pprint $ lam2wat' exp
-
 
 runWatFile :: FilePath -> FilePath -> IO ()
 runWatFile watfile wasmfile = do

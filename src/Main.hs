@@ -5,7 +5,7 @@ import System.Environment
 import Types
 
 import Run
-import Lam.Parser
+import Lam
 
 main :: IO ()
 main = do

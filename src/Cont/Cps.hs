@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Cps.Syntax where
+module Cont.Cps where
 
 import Val
 import Interpreter
@@ -45,4 +45,3 @@ instance PPrintable Cps where
 
 instance PPrintable (Fun Cps) where
   pprint (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (pprint b)
-

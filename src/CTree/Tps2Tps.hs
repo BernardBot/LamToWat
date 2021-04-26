@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 
-module Trans.Tps2Tps where
+module CTree.Tps2Tps where
 
 import Data.Maybe
 
@@ -11,13 +11,12 @@ import Control.Monad
 import Val
 import qualified Types as T (Fix)
 
-import Option
-import Vec
-import Union
-import Commands
+import CTree.Option
+import CTree.Vec
+import CTree.Union
+import CTree.Commands
 
-import Tps.Syntax
-import Tps.Commands
+import CTree.Tps
 
 tps2tps = hFix . swapTps . hRecord . hClos
 

@@ -1,4 +1,4 @@
-module Trans.Lam2Cps where
+module Cont.Lam2Cps where
 
 import Control.Monad.Cont
 import Control.Monad.State
@@ -6,8 +6,8 @@ import Control.Monad.State
 import Val
 import Types (fresh)
 
-import Lam.Syntax
-import Cps.Syntax
+import Lam
+import Cont.Cps
 
 type TransM = ContT Cps (State Int)
 

@@ -1,16 +1,63 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE GADTs #-}
 
-module Tps.Commands where
+module CTree.Tps where
+
+import Control.Monad
 
 import Val
-import Types (Var)
+import Types (Var,Sig)
 
-import Vec
-import Union
-import Commands
+import CTree.Option
+import CTree.Vec
+import CTree.Union
+import CTree.Commands
 
-import Tps.Syntax
+data Tps (sig :: Sig) a where
+  Leaf :: a -> Tps sig a
+  Node :: sig n b p r q
+       -> Vec n (Tps sig Val)
+       -> Option b (String, Tps sig a)
+       -> Tps sig a
+
+instance Monad (Tps sig) where
+  Leaf x       >>= g = g x
+  Node op cs k >>= g = Node op cs (fmap (\ (x,k) -> (x, k >>= g)) k)
+
+instance Functor (Tps sig) where
+  fmap = liftM
+
+instance Applicative (Tps sig) where
+  pure = Leaf
+  (<*>) = ap
+
+liftT :: sig n 'True p r q -> Vec n (Tps sig Val) -> String -> Tps sig a -> Tps sig a
+liftT op ps x k = Node op ps (Some (x, k))
+
+liftF :: sig n 'False p r q -> Vec n (Tps sig Val) -> Tps sig a
+liftF op ps = Node op ps None
+
+deriving instance (Show a, forall n b p r q. Show (sig n b p r q)) => Show (Tps sig a)
+
+-- Helper Function
+
+swapTps :: Tps (l :+: r :+: t) a -> Tps (r :+: l :+: t) a
+swapTps (Leaf a)                = Leaf a
+swapTps (Node (L    cmd)  ks k) = Node (R (L cmd)) (fmap swapTps ks) (fmap (fmap swapTps) k)
+swapTps (Node (R (L cmd)) ks k) = Node (L    cmd)  (fmap swapTps ks) (fmap (fmap swapTps) k)
+swapTps (Node (R (R cmd)) ks k) = Node (R (R cmd)) (fmap swapTps ks) (fmap (fmap swapTps) k)
+
+--------------
+-- Commands --
+--------------
 
 done :: a -> Tps sig a
 done = Leaf
