@@ -28,36 +28,36 @@ tree2tps =
     fst .
     flip runReader [] .
     flip runStateT 0 .
-    tree2tps'
+    t2t
 
-tree2tps' :: LamTree -> TransM LamTps
-tree2tps' (Leaf x) = return (done x)
-tree2tps' (Node (R (R (Add v1 v2))) Nil (Some k)) = do
+t2t :: LamTree -> TransM LamTps
+t2t (Leaf x) = return (done x)
+t2t (Node (R (R (Add v1 v2))) Nil (Some k)) = do
   x <- fresh "x"
-  k' <- tree2tps' (k (VAR x))
+  k' <- t2t (k (VAR x))
   return (add v1 v2 x k')
-tree2tps' (Node (R (R (App v vs))) Nil None) =
+t2t (Node (R (R (App v vs))) Nil None) =
   return (app v vs)
-tree2tps' (Node (R (L (Fix fxs))) bs (Some k)) = do
-  bs' <- mapM (\ b -> tree2tps' (b ())) bs
-  k' <- tree2tps' (k ())
+t2t (Node (R (L (Fix fxs))) bs (Some k)) = do
+  bs' <- mapM (\ b -> t2t (b ())) bs
+  k' <- t2t (k ())
   return (fix' fxs bs' k')
-tree2tps' (Node (L (SetK x v)) Nil (Some k)) =
-  local ((x,v):) (tree2tps' (k ()))
-tree2tps' (Node (L (GetK x)) Nil (Some k)) = do
+t2t (Node (L (SetK x v)) Nil (Some k)) =
+  local ((x,v):) (t2t (k ()))
+t2t (Node (L (GetK x)) Nil (Some k)) = do
   nv <- ask
   case lookup x nv of
-    Just v -> tree2tps' (k v)
+    Just v -> t2t (k v)
     Nothing -> error (x ++ " is not in env " ++ show nv)
-tree2tps' (Node (L Block) (b ::: Nil) (Some k)) = do
+t2t (Node (L Block) (b ::: Nil) (Some k)) = do
   r <- fresh "r"
   x <- fresh "x"
   b' <- local
     (("_nxt",LABEL r):)
-    (tree2tps' (do v <- b ()
-                   T.app (LABEL r) [v]))
-  k' <- tree2tps' (k (VAR x))
+    (t2t (do v <- b ()
+             T.app (LABEL r) [v]))
+  k' <- t2t (k (VAR x))
   return (fix' ((r,[x]) ::: Nil) (k' ::: Nil) b')
-tree2tps' (Node (L (Fresh x)) Nil (Some k)) = do
+t2t (Node (L (Fresh x)) Nil (Some k)) = do
   f <- fresh x
-  tree2tps' (k f)
+  t2t (k f)
