@@ -1,7 +1,9 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Types where
+
+import Development.Shake
 
 import Data.List
 
@@ -20,21 +22,20 @@ type Sig = Nat -> Bool -> * -> * -> * -> *
 ----------
 -- Util --
 ----------
+wasminterp file = cmd_ bin [file, "--run-all-exports"]
+  where bin = "/Users/ben/wabt/bin/wasm-interp"
+
+wat2wasm file outFile = cmd_ bin [file, "--output=" ++ outFile]
+  where bin = "/Users/ben/wabt/bin/wat2wasm"
+
+python3 file = cmd_ "python3" [file]
+
 fresh s = do
   i <- get
   put (i+1)
   return $ "_" ++ s ++ show i
 
 runFresh = fst . flip runState 0
-
-------------
--- Parser --
-------------
-
-type StreamP = String
-type UserStateP = ()
-type MonadP = Identity
-type Parser a = ParsecT StreamP UserStateP MonadP a 
 
 -----------------
 -- Definitions --
@@ -48,11 +49,11 @@ type Fix e = ([Fun e],e)
 -- Pretty Printing --
 ---------------------
 
-class PPrintable a where
-  pprint :: a -> String
+class Emitable a where
+  emit :: a -> String
 
-  pprintIO :: a -> IO ()
-  pprintIO = putStrLn . pprint
+  emitIO :: a -> IO ()
+  emitIO = putStrLn . emit
 
 indent :: String -> String
 indent = unlines . map ("  "++) . lines

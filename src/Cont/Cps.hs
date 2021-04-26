@@ -35,13 +35,13 @@ instance Interpretable Cps where
     letin x (ds !! i) (interp e)
   interp (DONE v) = interp v
 
-instance PPrintable Cps where
-  pprint (APP v vs)       = "return " ++ pprint v ++ args (map pprint vs)
-  pprint (DONE v)         = "return " ++ pprint v
-  pprint (ADD v1 v2 x e)  = assign x (pprint v1 ++ " + " ++ pprint v2)  ++ pprint e
-  pprint (RECORD vs x e)  = assign x (recs (map pprint vs)            ) ++ pprint e
-  pprint (SELECT n v x e) = assign x (pprint v ++ "[" ++ show n ++ "]") ++ pprint e
-  pprint (FIX fs e)       = concatMap pprint fs ++ pprint e
+instance Emitable Cps where
+  emit (APP v vs)       = "return " ++ emit v ++ args (map emit vs)
+  emit (DONE v)         = "return " ++ emit v
+  emit (ADD v1 v2 x e)  = assign x (emit v1 ++ " + " ++ emit v2)  ++ emit e
+  emit (RECORD vs x e)  = assign x (recs (map emit vs)            ) ++ emit e
+  emit (SELECT n v x e) = assign x (emit v ++ "[" ++ show n ++ "]") ++ emit e
+  emit (FIX fs e)       = concatMap emit fs ++ emit e
 
-instance PPrintable (Fun Cps) where
-  pprint (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (pprint b)
+instance Emitable (Fun Cps) where
+  emit (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (emit b)

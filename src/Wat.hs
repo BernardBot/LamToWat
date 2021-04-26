@@ -57,8 +57,8 @@ instance Interpretable Exp where
     f ds
   interp (Done v) = interp v
 
-instance PPrintable Wat where
-  pprint (fs,e) =
+instance Emitable Wat where
+  emit (fs,e) =
     "(module\n" ++
     "(memory 1)\n" ++
     "(global $" ++ _p ++ " (mut i32) (i32.const 0))\n" ++
@@ -68,16 +68,16 @@ instance PPrintable Wat where
     "(export \"" ++ _start ++ "\" (func $" ++ _start ++ "))\n" ++
     funcs ++ ")"
     where names = map (\ (f,_,_) -> f) fs
-          funcs = concatMap pprint ((_start,[],e):fs)
+          funcs = concatMap emit ((_start,[],e):fs)
           lengths = sort (nub (2 : (map (\ (_,as,_) -> length as) fs)))
           types = concatMap typedef lengths
 
           typedef :: Int -> String
           typedef len = "(type $" ++ _t ++ show len ++ " (func " ++ spaced (replicate len "(param i32)") ++ " (result i32)))\n"
           
-instance PPrintable (Fun Exp) where
-  pprint (f,as,b) =
-    "(func $" ++ f ++ " " ++ params as ++ " (result i32) " ++ locals ls ++ "\n" ++ indent (pprint b) ++ ")\n"
+instance Emitable (Fun Exp) where
+  emit (f,as,b) =
+    "(func $" ++ f ++ " " ++ params as ++ " (result i32) " ++ locals ls ++ "\n" ++ indent (emit b) ++ ")\n"
     where param p = "(param $" ++ p ++ " i32)"
           local l = "(local $" ++ l ++ " i32)"
           params = spaced . map param
@@ -90,21 +90,21 @@ instance PPrintable (Fun Exp) where
           lv (Store _ _ _ e) = lv e
           lv e = []
 
-instance PPrintable Exp where
-  pprint (Done v)        = pprintV v
-  pprint (App v vs)      = "(call_indirect (type $" ++ _t ++ show (length vs) ++ ") " ++ sp vs ++ " " ++ pprintV v ++ ")"
-  pprint (Add v1 v2 x e) = "(local.set $" ++ x ++ " (i32.add " ++ pprintV v1 ++ " " ++ pprintV v2 ++"))\n" ++ pprint e
-  pprint (Load i v x e)  = "(local.set $" ++ x ++ " (i32.load offset=" ++ show (intSize * i) ++ " " ++ pprintV v ++ "))\n" ++ pprint e
-  pprint (Store i s t e) = "(i32.store offset=" ++ show (intSize * i) ++ " " ++ pprintV s ++ " " ++ pprintV t ++ ")\n" ++ pprint e
-  pprint (Malloc i x e)  =
+instance Emitable Exp where
+  emit (Done v)        = emitV v
+  emit (App v vs)      = "(call_indirect (type $" ++ _t ++ show (length vs) ++ ") " ++ sp vs ++ " " ++ emitV v ++ ")"
+  emit (Add v1 v2 x e) = "(local.set $" ++ x ++ " (i32.add " ++ emitV v1 ++ " " ++ emitV v2 ++"))\n" ++ emit e
+  emit (Load i v x e)  = "(local.set $" ++ x ++ " (i32.load offset=" ++ show (intSize * i) ++ " " ++ emitV v ++ "))\n" ++ emit e
+  emit (Store i s t e) = "(i32.store offset=" ++ show (intSize * i) ++ " " ++ emitV s ++ " " ++ emitV t ++ ")\n" ++ emit e
+  emit (Malloc i x e)  =
     "(local.set $" ++ x ++ " (global.get $" ++ _p ++ "))\n" ++
     "(global.set $" ++ _p ++ " (i32.add (global.get $" ++ _p ++ ") (i32.const " ++ show (intSize * i) ++ ")))\n" ++
-    pprint e
+    emit e
 
-pprintV :: Val -> String
-pprintV (VAR x) = "(local.get $" ++ x ++ ")"
-pprintV (INT i) = "(i32.const " ++ show i ++ ")"
-pprintV (LABEL x) = error $ "encountered LABEL value in Wat expression: " ++ show x
+emitV :: Val -> String
+emitV (VAR x) = "(local.get $" ++ x ++ ")"
+emitV (INT i) = "(i32.const " ++ show i ++ ")"
+emitV (LABEL x) = error $ "encountered LABEL value in Wat expression: " ++ show x
 
 _p,_t,_start :: String
 _p = "_p"
@@ -118,4 +118,4 @@ spaced :: [String] -> String
 spaced = intercalate " "
 
 sp :: [Val] -> String
-sp = spaced . map pprintV
+sp = spaced . map emitV

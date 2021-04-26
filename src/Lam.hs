@@ -27,20 +27,11 @@ instance Interpretable Lam where
     Int j <- interp e2
     int $ i + j
 
-instance PPrintable Lam where
-  pprint (Val v) = pprint v
-  pprint (App e1 e2) = pprint e1 ++ " " ++
-    case e2 of
-      App {} -> "(" ++ pprint e2 ++ ")"
-      _      -> pprint e2
-  pprint (Lam x e) = "(\\ " ++ x ++ go e
-    where go e = case e of
-            Lam x e -> " " ++ x ++ go e
-            _       -> " -> " ++ pprint e ++ ")"
-  pprint (Add e1 e2) = pprint e1 ++ " + " ++
-    case e2 of
-      App {} -> "(" ++ pprint e2 ++ ")"
-      _      -> pprint e2
+instance Emitable Lam where
+  emit (Val v) = emit v
+  emit (App e1 e2) = emit e1 ++ "(" ++ emit e2 ++ ")"
+  emit (Lam x e) = "(lambda " ++ x ++ ": " ++ emit e ++ ")"
+  emit (Add e1 e2) = emit e1 ++ " + " ++ emit e2
 
 ------------
 -- Parser --

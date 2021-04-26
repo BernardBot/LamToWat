@@ -1,14 +1,8 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE IncoherentInstances #-}
-{-# LANGUAGE TypeOperators #-}
-
 module Run where
 
 import Development.Shake
 
-import Types (pprint)
+import Types
 
 import Lam
 import Wat
@@ -32,14 +26,12 @@ compile file outFile = do
   fileContents <- readFile file
   case parseLam fileContents of
     Left err -> print err
-    Right exp -> writeFile outFile $ pprint $ lam2wat' exp
+    Right exp -> writeFile outFile $ emit $ lam2wat' exp
 
 runWatFile :: FilePath -> FilePath -> IO ()
 runWatFile watfile wasmfile = do
-  cmd_ wat2wasm [watfile, "--output=" ++ wasmfile]
-  cmd_ wasminterp [wasmfile, "--run-all-exports"]
-  where wat2wasm = "/Users/ben/wabt/bin/wat2wasm"
-        wasminterp = "/Users/ben/wabt/bin/wasm-interp"
+  wat2wasm watfile wasmfile
+  wasminterp wasmfile
 
 lam2wat :: Lam -> Wat
 lam2wat = cps2wat . cps2cps. lam2cps

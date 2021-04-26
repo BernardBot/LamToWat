@@ -22,4 +22,3 @@ main = do
     [file,outFile] -> compile file outFile
 
     _ -> putStrLn "use lam2wat like: lam2wat file [outputfile] [run]"
-

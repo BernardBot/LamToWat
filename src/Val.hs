@@ -19,10 +19,10 @@ instance Interpretable Val where
   interp (VAR x) = look x
   interp (LABEL x) = look x
 
-instance PPrintable Val where
-  pprint (INT i) = show i
-  pprint (VAR x) = x
-  pprint (LABEL x) = x
+instance Emitable Val where
+  emit (INT i) = show i
+  emit (VAR x) = x
+  emit (LABEL x) = x
 
 instance IsString Val where
   fromString "" = VAR "" -- INT 0 ?
