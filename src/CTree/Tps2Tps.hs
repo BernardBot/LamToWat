@@ -22,26 +22,26 @@ tps2tps = hFix . swapTps . hRecord . hClos
 
 hClos :: Tps            (Fix :+: Base :+: cmd) Val
       -> Tps (Record :+: Fix :+: Base :+: cmd) Val
-hClos = hClos' []
+hClos = hCl []
 
-hClos' :: [String]
+hCl :: [String]
        -> Tps            (Fix :+: Base :+: cmd) Val
        -> Tps (Record :+: Fix :+: Base :+: cmd) Val
-hClos' nv (Node (L (Fix fxs)) bs (Some (_,k))) =
+hCl nv (Node (L (Fix fxs)) bs (Some (_,k))) =
   fix' (mapV addArg fxs)
        (zipWithV funClos fxs bs)
-       (hClos' nv k)
+       (hCl nv k)
   where addArg (name,args) = (name,"_closure":args)
 
         funClos (name,args) body = do
           select_ 1 (VAR "_closure") "_env"
           zipWithM_ (openClos args) [0..] nv
-          hClos' (nv++args) body
+          hCl (nv++args) body
 
         openClos args i x =
           if x `elem` args then return () else select_ i (VAR "_env") x
 
-hClos' nv (Node (R (L (App fun args))) Nil None) = do
+hCl nv (Node (R (L (App fun args))) Nil None) = do
   record_ (map VAR nv) "_env"
   args' <- mapM mkClos args
 
@@ -52,18 +52,18 @@ hClos' nv (Node (R (L (App fun args))) Nil None) = do
 
     VAR cl -> let fp = '_' : cl in do
       select_ 0 (VAR cl) fp
-      app (VAR fp) (VAR cl : args') 
+      app (VAR fp) (VAR cl : args')
 
   where mkClos (LABEL x) = let _x = '_' : x in do
             record_ [LABEL x,VAR "_env"] _x
             return $ VAR _x
         mkClos v = return v
 
-hClos' nv (Leaf v) = Leaf v
-hClos' nv (Node cmd ks k) =
+hCl nv (Leaf v) = Leaf v
+hCl nv (Node cmd ks k) =
   Node (R cmd)
-    (fmap (hClos' nv) ks)
-    (fmap (\ (x,k) -> (x,hClos' (extendnv nv x) k)) k)
+    (fmap (hCl nv) ks)
+    (fmap (\ (x,k) -> (x,hCl (extendnv nv x) k)) k)
   where extendnv nv "" = nv
         extendnv nv x = nv ++ [x]
 
@@ -83,7 +83,8 @@ hRecord (Node (R cmd) ks k) =
     (fmap hRecord ks)
     (fmap (fmap hRecord) k)
 
-hFix :: Tps (Fix :+: cmd) Val -> T.Fix (Tps cmd Val)
+hFix :: Tps (Fix :+: cmd) Val
+     -> T.Fix (Tps cmd Val)
 hFix (Leaf v) = ([],Leaf v)
 hFix (Node (R cmd) ks k) = case k of
 
@@ -101,5 +102,3 @@ hFix (Node (L (Fix fxs)) bs (Some ("",k))) = (fs'++fs,k')
 
         hFun (f,as) b = (f,as,b') : fs
           where (fs,b') = hFix b
-
-        

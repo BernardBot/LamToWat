@@ -22,6 +22,7 @@ type Sig = Nat -> Bool -> * -> * -> * -> *
 ----------
 -- Util --
 ----------
+
 wasminterp file = cmd_ bin [file, "--run-all-exports"]
   where bin = "/Users/ben/wabt/bin/wasm-interp"
 

@@ -79,11 +79,13 @@ instance Emitable Wat where
           types = concatMap typedef lengths
 
           typedef :: Int -> String
-          typedef len = "(type $" ++ _t ++ show len ++ " (func " ++ spaced (replicate len "(param i32)") ++ " (result i32)))\n"
+          typedef len = "(type $" ++ _t ++ show len ++
+            " (func " ++ spaced (replicate len "(param i32)") ++ " (result i32)))\n"
           
 instance Emitable (Fun Exp) where
   emit (f,as,b) =
-    "(func $" ++ f ++ " " ++ params as ++ " (result i32) " ++ locals ls ++ "\n" ++ indent (emit b) ++ ")\n"
+    "(func $" ++ f ++ " " ++ params as ++
+    " (result i32) " ++ locals ls ++ "\n" ++ indent (emit b) ++ ")\n"
     where param p = "(param $" ++ p ++ " i32)"
           local l = "(local $" ++ l ++ " i32)"
           params = spaced . map param

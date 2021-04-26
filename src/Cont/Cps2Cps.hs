@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Cont.Cps2Cps where
 
 import Control.Monad.Writer
@@ -47,6 +48,7 @@ c2c (APP fun args) = do
   where appClos = case fun of
           LABEL fp -> let cl = '_' : fp in
                         APP (LABEL fp) (VAR cl : args')
+
           VAR cl   -> let fp = '_' : cl in
                         SELECT 0 (VAR cl) fp $
                         APP (VAR fp) (VAR cl : args')

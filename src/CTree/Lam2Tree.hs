@@ -29,4 +29,3 @@ lam2tree (Add e1 e2) = do
   v1 <- lam2tree e1
   v2 <- lam2tree e2
   add v1 v2
-
