@@ -13,10 +13,10 @@ main = do
   case args of
     [file,"run"] -> do
       compile file "./temp.wat"
-      runWatFile "./temp.wat" "./temp.wasm"
+      wat2wasm "./temp.wat" "./temp.wasm"
     [file,outFile,"run"] -> do
       compile file outFile
-      runWatFile outFile "./temp.wasm"
+      wat2wasm outFile "./temp.wasm"
 
     [file]         -> compile file "./temp.wat"
     [file,outFile] -> compile file outFile
