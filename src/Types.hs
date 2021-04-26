@@ -20,7 +20,6 @@ type Sig = Nat -> Bool -> * -> * -> * -> *
 ----------
 -- Util --
 ----------
-
 fresh s = do
   i <- get
   put (i+1)

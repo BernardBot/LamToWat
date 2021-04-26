@@ -1,23 +1,25 @@
 module Trans.Cps2Wat where
 
-import Val
+import Types (Var)
 
-import Data.Maybe
-import Data.List
+import Val
 
 import Cps.Syntax
 import Wat.Syntax
 
 cps2wat :: Cps -> Wat
-cps2wat (FIX fs e) = (map (fmap cps2wat') fs,cps2wat' e)
-    where ns = map (\ (f,as,b) -> f) fs
+cps2wat (FIX fs e) = (map (fmap c2w) fs,c2w e)
+    where ns :: [Var]
+          ns = map (\ (f,as,b) -> f) fs
 
-          cps2wat' (DONE v)         = Done (val2wat v)
-          cps2wat' (APP v vs)       = App (val2wat v) (map val2wat vs)
-          cps2wat' (ADD v1 v2 x e)  = Add (val2wat v1) (val2wat v2) x (cps2wat' e)
-          cps2wat' (SELECT i v x e) = Load i (val2wat v) x (cps2wat' e)
-          cps2wat' (RECORD vs x e)  = Malloc (length vs) x
-            (foldr (\ (i,v) -> Store i (VAR x) (val2wat v)) (cps2wat' e) (zip [0..] vs))
+          cv2wv :: Val -> Val
+          cv2wv = flip pointify ns -- Cps to Wat Val
 
-          val2wat (LABEL x) = INT (fromJust (x `elemIndex` ns))
-          val2wat v         = v
+          c2w (DONE v)         = Done (cv2wv v)
+          c2w (APP v vs)       = App (cv2wv v) (map cv2wv vs)
+          c2w (ADD v1 v2 x e)  = Add (cv2wv v1) (cv2wv v2) x (c2w e)
+          c2w (SELECT i v x e) = Load i (cv2wv v) x (c2w e)
+          c2w (RECORD vs x e)  =
+            Malloc (length vs) x $
+            foldr (\ (i,v) -> Store i (VAR x) (cv2wv v))
+              (c2w e) (zip [0..] vs)

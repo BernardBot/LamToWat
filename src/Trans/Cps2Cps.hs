@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Trans.Cps2Cps where
 
 import Control.Monad.Writer
@@ -10,54 +11,60 @@ import Types
 
 import Cps.Syntax
 
+type TransM = WriterT [Fun Cps] (Reader [Var])
+
 cps2cps :: Cps -> Cps
 cps2cps =
   uncurry FIX .
   swap .
   flip runReader [] .
   runWriterT .
-  cps2cps'
+  c2c
 
-type TransM = WriterT [Fun Cps] (Reader [Var])
-
-cps2cps' :: Cps -> TransM Cps
-cps2cps' (FIX fs e) = do
-  nv <- ask
-  fs' <- mapM (\ (f,as,b) -> do
-        b' <- local (++ as) (cps2cps' b)
-        return (f,_nv:as,open b' as nv)) fs
+c2c :: Cps -> TransM Cps
+c2c (FIX fs e) = do
+  fs' <- mapM funClos fs
   tell fs'
-  cps2cps' e
-cps2cps' (APP v vs) = do
+  c2c e
+  where funClos (name,args,body) = do
+          nv <- ask
+          body' <- local (++args) (c2c body)
+          return $
+            ( name
+            , "_closure" : args
+            , SELECT 1 (VAR "_closure") "_env" $
+              foldr (openClos args) body' (zip [0..] nv)
+            )
+
+        openClos args (i,x) =
+          if x `elem` args then id else SELECT i (VAR "_env") x
+
+c2c (APP fun args) = do
   nv <- ask
-  let vs' = rename vs
-  let app = apply v vs'
-  return (close app (v:vs) nv)
-cps2cps' (DONE v) = return (DONE v)
-cps2cps' (RECORD vs x e)  = do
-  e' <- local (++ [x]) (cps2cps' e)
-  return (RECORD vs x e')
-cps2cps' (SELECT i v x e) = do
-  e' <- local (++ [x]) (cps2cps' e)
-  return (SELECT i v x e')
-cps2cps' (ADD v1 v2 x e)  = do
-  e' <- local (++ [x]) (cps2cps' e)
-  return (ADD v1 v2 x e')
+  return $
+    RECORD (map VAR nv) "_env" $
+    foldr mkClos appClos (fun:args)
+  where appClos = case fun of
+          LABEL fp -> let cl = '_' : fp in
+                        APP (LABEL fp) (VAR cl : args')
+          VAR cl   -> let fp = '_' : cl in
+                        SELECT 0 (VAR cl) fp $
+                        APP (VAR fp) (VAR cl : args')
 
-open :: Cps -> [Var] -> [Var] -> Cps
-open e as nv = SELECT 1 (VAR _nv) _nv
-  (foldr (\ (i,x) b -> if x `elem` as then b else SELECT i (VAR _nv) x b) e (zip [0..] nv))
+        mkClos (LABEL x) = RECORD [LABEL x, VAR "_env"] ('_' : x)
+        mkClos _ = id
 
-apply :: Val -> [Val] -> Cps
-apply (LABEL f) vs = APP (LABEL f) (VAR (_p f) : vs)
-apply (VAR f) vs = SELECT 0 (VAR f) (_p f) (APP (VAR (_p f)) (VAR f : vs))
+        args' = map rename args
 
-close :: Cps -> [Val] -> [Var] -> Cps
-close e vs nv = RECORD (map VAR nv) _nv
-  (foldr (\ v b -> case v of LABEL f -> RECORD [v,VAR _nv] (_p f) b; _ -> b) e vs)
+        rename (LABEL x) = VAR $ '_' : x
+        rename v = v
 
-rename :: [Val] -> [Val]
-rename vs = map (\ v -> case v of LABEL f -> VAR (_p f); _ -> v) vs
+c2c (RECORD vs x e) = withvar x e $ RECORD vs
+c2c (SELECT i v x e) = withvar x e $ SELECT i v
+c2c (ADD v1 v2 x e) = withvar x e $ ADD v1 v2
+c2c (DONE v) = return $ DONE v
 
-_p = ('_' :)
-_nv = "_nv"
+withvar :: Var -> Cps -> (Var -> Cps -> Cps) -> TransM Cps
+withvar x e op = do
+  e' <- local (++[x]) (c2c e)
+  return $ op x e'
