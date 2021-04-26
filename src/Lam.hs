@@ -33,6 +33,11 @@ instance Emitable Lam where
   emit (Lam x e) = "(lambda " ++ x ++ ": " ++ emit e ++ ")"
   emit (Add e1 e2) = emit e1 ++ " + " ++ emit e2
 
+emitRun :: Lam -> IO ()
+emitRun lam = do
+  writeFile "lam_temp.py" $ "print(" ++ emit lam ++ ")"
+  python3 "lam_temp.py"
+
 ------------
 -- Parser --
 ------------

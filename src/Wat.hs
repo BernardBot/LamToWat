@@ -57,6 +57,12 @@ instance Interpretable Exp where
     f ds
   interp (Done v) = interp v
 
+emitRun :: Wat -> IO ()
+emitRun wat = do
+  writeFile "temp.wat" $ emit wat
+  wat2wasm "temp.wat" "temp.wasm"
+  wasminterp "temp.wasm"
+
 instance Emitable Wat where
   emit (fs,e) =
     "(module\n" ++

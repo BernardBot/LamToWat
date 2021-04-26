@@ -28,11 +28,6 @@ compile file outFile = do
     Left err -> print err
     Right exp -> writeFile outFile $ emit $ lam2wat' exp
 
-runWatFile :: FilePath -> FilePath -> IO ()
-runWatFile watfile wasmfile = do
-  wat2wasm watfile wasmfile
-  wasminterp wasmfile
-
 lam2wat :: Lam -> Wat
 lam2wat = cps2wat . cps2cps. lam2cps
 

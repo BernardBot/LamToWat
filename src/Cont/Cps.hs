@@ -38,10 +38,18 @@ instance Interpretable Cps where
 instance Emitable Cps where
   emit (APP v vs)       = "return " ++ emit v ++ args (map emit vs)
   emit (DONE v)         = "return " ++ emit v
-  emit (ADD v1 v2 x e)  = assign x (emit v1 ++ " + " ++ emit v2)  ++ emit e
+  emit (ADD v1 v2 x e)  = assign x (emit v1 ++ " + " ++ emit v2)    ++ emit e
   emit (RECORD vs x e)  = assign x (recs (map emit vs)            ) ++ emit e
   emit (SELECT n v x e) = assign x (emit v ++ "[" ++ show n ++ "]") ++ emit e
   emit (FIX fs e)       = concatMap emit fs ++ emit e
 
 instance Emitable (Fun Cps) where
   emit (f,as,b) = "def " ++ f ++ args as ++ ":\n" ++ indent (emit b)
+
+emitRun :: Cps -> IO ()
+emitRun cps = do
+  writeFile "cps_temp.py" cps'
+  python3 "cps_temp.py"
+  where foo = lines $ emit cps
+        baz = "print(" ++ drop (length "return ") (last foo) ++ ")"
+        cps' = unlines $ init foo ++ [baz]
