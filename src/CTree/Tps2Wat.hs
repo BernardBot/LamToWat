@@ -15,9 +15,10 @@ import CTree.Option
 import CTree.Vec
 import CTree.Union
 import CTree.Commands (Malloc,Base,Empty)
+import CTree.Tps
 
 import qualified CTree.Commands as T
-import CTree.Tps
+
 import Wat
 
 type WatTps = Fix (Tps (Malloc :+: Base :+: Empty) Val)
