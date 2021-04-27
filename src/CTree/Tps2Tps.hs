@@ -4,6 +4,8 @@
 
 module CTree.Tps2Tps where
 
+import Types (Var)
+
 import Data.Maybe
 
 import Control.Monad
@@ -24,7 +26,7 @@ hClos :: Tps            (Fix :+: Base :+: cmd) Val
       -> Tps (Record :+: Fix :+: Base :+: cmd) Val
 hClos = hCl []
 
-hCl :: [String]
+hCl :: [Var]
        -> Tps            (Fix :+: Base :+: cmd) Val
        -> Tps (Record :+: Fix :+: Base :+: cmd) Val
 hCl nv (Node (L (Fix fxs)) bs (Some (_,k))) =
@@ -67,8 +69,8 @@ hCl nv (Node cmd ks k) =
   where extendnv nv "" = nv
         extendnv nv x = nv ++ [x]
 
-hRecord :: Tps (Record :+: cmd) Val
-        -> Tps (Malloc :+: cmd) Val
+hRecord :: Tps (Record :+: cmd) Val ->
+           Tps (Malloc :+: cmd) Val
 hRecord (Node (L (Record vs)) Nil (Some (x,k))) = do
   malloc_ (length vs) x
   zipWithM_ (\ i -> store_ i (VAR x)) [0..] vs
@@ -83,8 +85,8 @@ hRecord (Node (R cmd) ks k) =
     (fmap hRecord ks)
     (fmap (fmap hRecord) k)
 
-hFix :: Tps (Fix :+: cmd) Val
-     -> T.Fix (Tps cmd Val)
+hFix :: Tps (Fix :+: cmd) Val ->
+        T.Fix (Tps cmd Val)
 hFix (Leaf v) = ([],Leaf v)
 hFix (Node (R cmd) ks k) = case k of
 
