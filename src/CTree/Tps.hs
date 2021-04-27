@@ -23,10 +23,10 @@ import CTree.Commands
 
 data Tps (sig :: Sig) a where
   Leaf :: a -> Tps sig a
-  Node :: sig n b p r q
-       -> Vec n (Tps sig Val)
-       -> Option b (String, Tps sig a)
-       -> Tps sig a
+  Node :: sig n b p r q ->
+          Vec n (Tps sig Val) ->
+          Option b (Var, Tps sig a) ->
+          Tps sig a
 
 instance Monad (Tps sig) where
   Leaf x       >>= g = g x

@@ -9,7 +9,10 @@
 
 module CTree.Tree where
 
+import Types (indent)
+
 import Data.Void
+import Data.List
 
 import Control.Monad
 import Control.Monad.State
@@ -80,37 +83,33 @@ fresh v = liftT (inj (Fresh v)) Nil
 
 type LamCmd = Comp :+: Fix :+: Base
 
+
 instance Show a => Show (Tree LamCmd a) where
   show = Types.runFresh . go
     where go :: Show a => Tree LamCmd a -> State Integer String
-          go (Leaf v) = return $ show v
-          go (Node (R (R op@(Add _ _))) Nil (Some k)) = do
-            x <- Types.fresh "x"
-            k' <- go (k (VAR x))
-            return $ show op ++ " (λ " ++ x ++ " → " ++ k' ++ ")"
-          go (Node (R (R op@(App _ _))) Nil None) = return $ show op
-          go (Node (R (L op@(Fix _))) ks (Some k)) = do
+          go (Leaf v)                                 = return $ "Leaf (" ++ show v ++ ")"
+          go (Node op@(R (R (App _ _))) Nil None)     = return $ show op
+
+          go (Node op@(R (L (Fix _)))   ks (Some k)) = do
             ks' <- mapM (go . ($())) ks
             k' <- go (k ())
-            return $ show op ++ " [" ++
-              foldr (\ k s -> k ++ "; " ++ s) "" ks' ++ "] " ++
-              k'
-          go (Node (L op@(GetK _)) Nil (Some k)) = do
-            x <- Types.fresh "x"
-            k' <- go (k (VAR x))
-            return $ show op ++ " (λ " ++ x ++ " → " ++ k' ++ ")"
-          go (Node (L op@(SetK _ _)) Nil (Some k)) = do
-            x <- Types.fresh "x"
-            k' <- go (k ())
-            return $ show op ++ " (λ " ++ x ++ " → " ++ k' ++ ")"
-          go (Node (L op@Block) (k0 ::: Nil) (Some k)) = do
+            return $ "Node (" ++ show op ++ ") (\n" ++
+              indent (intercalate ":::" (toList ks' ++ ["Nil"])) ++ ") (\\ () ->\n" ++ k' ++ ")"
+          go (Node op@(L Block) (k0 ::: Nil) (Some k)) = do
             x <- Types.fresh "x"
             k0' <- go (k0 ())
             k' <- go (k (VAR x))
-            return $ show op ++ " [" ++
-              k0' ++ "] (λ " ++ x ++ " → "
-              ++ k' ++ ")"
-          go (Node (L op@(Fresh y)) Nil (Some k)) = do
+            return $ "Node (" ++ show op ++ ") (\\ () -> \n" ++ indent k0' ++ ") (\\ " ++ x ++ " ->\n" ++ k' ++ ")"
+          go (Node op@(L (Fresh y)) Nil (Some k)) = do
             x <- Types.fresh y
             k' <- go (k x)
-            return $ show op ++ " (λ " ++ x ++ " → " ++ k' ++ ")"
+            return $ "Node (" ++ show op ++ ") (\\ " ++ x ++ " ->\n" ++ k' ++ ")"
+
+          go (Node op@(R (R (Add _ _))) Nil (Some k)) = showSimple op k VAR
+          go (Node op@(L (GetK _))      Nil (Some k)) = showSimple op k VAR
+          go (Node op@(L (SetK _ _))    Nil (Some k)) = showSimple op k (const ())
+
+          showSimple op k f = do
+            x <- Types.fresh "x"
+            k' <- go (k (f x))
+            return $ "Node (" ++ show op ++ ") (\\ " ++ x ++ " ->\n" ++ k' ++ ")"
