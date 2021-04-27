@@ -44,9 +44,10 @@ c2c (APP fun args) = do
   nv <- ask
   return $
     RECORD (map VAR nv) "_env" $
-    foldr mkClos appClos (fun:args)
+    foldr mkClos appClos args
   where appClos = case fun of
           LABEL fp -> let cl = '_' : fp in
+                        RECORD [LABEL fp,VAR "_env"] cl $
                         APP (LABEL fp) (VAR cl : args')
 
           VAR cl   -> let fp = '_' : cl in
