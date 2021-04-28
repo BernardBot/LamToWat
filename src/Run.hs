@@ -35,3 +35,17 @@ lam2wat = cps2wat . cps2cps. lam2cps
 
 lam2wat' :: Lam -> Wat
 lam2wat' = tps2wat . tps2tps . tree2tps . lam2tree
+
+lam2doms :: Lam -> [Either Error Dom]
+lam2doms lam = [run0 lam, run0 lam',run0 lam'',run0 lam''']
+  where lam' = lam2cps lam
+        lam'' = cps2cps lam'
+        lam''' = cps2wat lam''
+
+lam2doms' :: Lam -> [Either Error Dom]
+lam2doms' lam = [run0 lam, run0 lam',run0 lam'',run0 lam''',run0 lam'''',run0 lam''''']
+  where lam' = tree2tps $ lam2tree lam
+        lam'' = hClos lam'
+        lam''' = hRecord lam''
+        lam'''' = hFix $ swapTps lam'''
+        lam''''' = tps2wat lam''''

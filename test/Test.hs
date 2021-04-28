@@ -7,7 +7,7 @@ import Distribution.TestSuite
 import System.Directory
 
 import Interpreter (run0)
-import Run (lam2wat,lam2wat')
+import Run (lam2doms,lam2doms')
 
 import Lam (parseLam)
 
@@ -52,13 +52,14 @@ tests = do
 testIt :: String -> IO Progress
 testIt str = case parseLam str of
   Left err -> return $ Finished $ Fail $ show err
-  Right exp ->
-    let w  = lam2wat  exp; r  = run0 w
-        w' = lam2wat' exp; r' = run0 w'
-    in do
-      print [r,r']
-      if r == r'
-       then do
+  Right exp -> do
+    let r  = lam2doms exp
+    let r' = lam2doms' exp
+    let rs = r ++ r'
+    print r
+    print r'
+    if all (==head r) rs
+      then do
         putStrLn "TEST PASSED"
         return $ Finished Pass
        else do

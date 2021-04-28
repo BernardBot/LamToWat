@@ -65,6 +65,7 @@ instance (Interpretable a, forall n b p r q. Interpretable (sig n b p r q)) =>
     let ks' = mapV (\ k -> Fun $ \ [] -> interp k) ks -- hacky thunks
     let k' = Fun $ \ [] -> interp k
     f (k':toList ks')
+
   -- what to do here?
   -- interp (Node cmd ks None) = do
   --   Fun f <- interp cmd
