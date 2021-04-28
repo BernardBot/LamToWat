@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DataKinds #-}
 
@@ -5,6 +7,8 @@ module Types where
 
 import Development.Shake
 
+import Data.Tree
+import Data.Tree.Pretty
 import Data.List
 
 import Control.Monad.Identity
@@ -70,3 +74,16 @@ recs ss = "[" ++ intercalate "," ss ++ "]"
 
 parens :: String -> String
 parens s = "(" ++ s ++ ")"
+
+class Treeable a where
+  toTree :: a -> Tree String
+
+  pTree :: a -> String
+  pTree = drawVerticalTree . toTree
+
+  pTreeIO :: a -> IO ()
+  pTreeIO = putStr . pTree
+
+instance Treeable a => Treeable (Fix a) where
+  toTree (fs,e) = Node "Fix"
+    [Node "fs" (map (\ (f,as,b) -> Node (show f ++ " " ++ show as) [toTree b]) fs), toTree e]

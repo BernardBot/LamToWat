@@ -7,6 +7,8 @@ import Data.List
 
 import Control.Monad
 
+import Data.Tree
+
 import Val
 import Interpreter
 import Types
@@ -20,8 +22,16 @@ data Exp
   | Load Offset Val Var Exp
   | Add Val Val Var Exp
   | App Val [Val]
-  | Done Val
+  | Val Val
   deriving (Eq,Show)
+
+instance Treeable Exp where
+  toTree (Malloc i x e) = Node (x ++ " = Malloc " ++ show i) [toTree e]
+  toTree (Store i s t e) = Node ("Store " ++ show i ++ " (" ++ show s ++ ") (" ++ show t ++ ")") [toTree e]
+  toTree (Load i v x e) = Node (x ++ " = Load " ++ show i ++ " (" ++ show v ++ ") ") [toTree e]
+  toTree (Add v1 v2 x e) = Node (x ++ " = Add (" ++ show v1 ++ ") (" ++ show v2 ++ ")") [toTree e]
+  toTree (App v vs) = Node ("App (" ++ show v ++ ") " ++ show vs) []
+  toTree (Val v) = toTree v
 
 instance {-# OVERLAPS #-} Interpretable Wat where
   interp (fs,e) = do
@@ -55,7 +65,7 @@ instance Interpretable Exp where
     Fun f  <- load fp
     ds     <- mapM interp vs
     f ds
-  interp (Done v) = interp v
+  interp (Val v) = interp v
 
 emitRun :: Wat -> IO ()
 emitRun wat = do
@@ -99,7 +109,7 @@ instance Emitable (Fun Exp) where
           lv e = []
 
 instance Emitable Exp where
-  emit (Done v)        = emitV v
+  emit (Val v)        = emitV v
   emit (App v vs)      = "(call_indirect (type $" ++ _t ++ show (length vs) ++ ") " ++ sp vs ++ " " ++ emitV v ++ ")"
   emit (Add v1 v2 x e) = "(local.set $" ++ x ++ " (i32.add " ++ emitV v1 ++ " " ++ emitV v2 ++"))\n" ++ emit e
   emit (Load i v x e)  = "(local.set $" ++ x ++ " (i32.load offset=" ++ show (intSize * i) ++ " " ++ emitV v ++ "))\n" ++ emit e

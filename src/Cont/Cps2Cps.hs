@@ -16,14 +16,14 @@ type TransM = WriterT [Fun Cps] (Reader [Var])
 
 cps2cps :: Cps -> Cps
 cps2cps =
-  uncurry FIX .
+  uncurry Fix .
   swap .
   flip runReader [] .
   runWriterT .
   c2c
 
 c2c :: Cps -> TransM Cps
-c2c (FIX fs e) = do
+c2c (Fix fs e) = do
   fs' <- mapM funClos fs
   tell fs'
   c2c e
@@ -33,28 +33,28 @@ c2c (FIX fs e) = do
           return $
             ( name
             , "_closure" : args
-            , SELECT 1 (VAR "_closure") "_env" $
+            , Select 1 (VAR "_closure") "_env" $
               foldr (openClos args) body' (zip [0..] nv)
             )
 
         openClos args (i,x) =
-          if x `elem` args then id else SELECT i (VAR "_env") x
+          if x `elem` args then id else Select i (VAR "_env") x
 
-c2c (APP fun args) = do
+c2c (App fun args) = do
   nv <- ask
   return $
-    RECORD (map VAR nv) "_env" $
+    Record (map VAR nv) "_env" $
     foldr mkClos appClos args
   where appClos = case fun of
           LABEL fp -> let cl = '_' : fp in
-                        RECORD [LABEL fp,VAR "_env"] cl $
-                        APP (LABEL fp) (VAR cl : args')
+                        Record [LABEL fp,VAR "_env"] cl $
+                        App (LABEL fp) (VAR cl : args')
 
           VAR cl   -> let fp = '_' : cl in
-                        SELECT 0 (VAR cl) fp $
-                        APP (VAR fp) (VAR cl : args')
+                        Select 0 (VAR cl) fp $
+                        App (VAR fp) (VAR cl : args')
 
-        mkClos (LABEL x) = RECORD [LABEL x, VAR "_env"] ('_' : x)
+        mkClos (LABEL x) = Record [LABEL x, VAR "_env"] ('_' : x)
         mkClos _ = id
 
         args' = map rename args
@@ -62,10 +62,10 @@ c2c (APP fun args) = do
         rename (LABEL x) = VAR $ '_' : x
         rename v = v
 
-c2c (RECORD vs x e) = withvar x e $ RECORD vs
-c2c (SELECT i v x e) = withvar x e $ SELECT i v
-c2c (ADD v1 v2 x e) = withvar x e $ ADD v1 v2
-c2c (DONE v) = return $ DONE v
+c2c (Record vs x e) = withvar x e $ Record vs
+c2c (Select i v x e) = withvar x e $ Select i v
+c2c (Add v1 v2 x e) = withvar x e $ Add v1 v2
+c2c (Val v) = return $ Val v
 
 withvar :: Var -> Cps -> (Var -> Cps -> Cps) -> TransM Cps
 withvar x e op = do

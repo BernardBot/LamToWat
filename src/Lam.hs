@@ -1,5 +1,7 @@
 module Lam where
 
+import Data.Tree
+
 import Text.Parsec
 import Text.Parsec.Token
 import Text.Parsec.Language
@@ -38,6 +40,12 @@ emitRun :: Lam -> IO ()
 emitRun lam = do
   writeFile "lam_temp.py" $ "print(" ++ emit lam ++ ")"
   python3 "lam_temp.py"
+
+instance Treeable Lam where
+  toTree (Lam x e) = Node ("Lam " ++ show x) [toTree e]
+  toTree (App e1 e2) = Node "App" [toTree e1, toTree e2]
+  toTree (Add e1 e2) = Node "Add" [toTree e1, toTree e2]
+  toTree (Val v) = toTree v
 
 ------------
 -- Parser --

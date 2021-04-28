@@ -1,5 +1,6 @@
 module Val where
 
+import Data.Tree
 import Data.Char
 import Data.String
 import Data.Maybe
@@ -23,6 +24,9 @@ instance Emitable Val where
   emit (INT i) = show i
   emit (VAR x) = x
   emit (LABEL x) = x
+
+instance Treeable Val where
+  toTree v = Node (show v) []
 
 instance IsString Val where
   fromString "" = VAR "" -- INT 0 ?
