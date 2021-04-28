@@ -18,6 +18,7 @@ data Lam
 
 instance Interpretable Lam where
   interp (Val v) = interp v
+  interp (Lam x e) = closure [x] (interp e)
   interp (App e1 e2) = do
     Fun f <- interp e1
     a <- interp e2

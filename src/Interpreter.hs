@@ -2,13 +2,16 @@
 
 module Interpreter where
 
-import Control.Monad.State
-import Control.Monad.Reader
+import Control.Monad.State hiding (fix)
+import Control.Monad.Reader hiding (fix)
 
 import Types
 
 class Interpretable a where
   interp :: a -> IDom
+
+instance {-# OVERLAPPABLE #-} Interpretable a => Interpretable (Fix a) where
+  interp (fs,e) = fix (map (fmap interp) fs,interp e)
 
 -- Environment
 type Env = [(Var,Dom)]

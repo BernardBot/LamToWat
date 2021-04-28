@@ -8,6 +8,7 @@
 
 module CTree.Union where
 
+import Interpreter
 import Types
 
 data (:+:) :: Sig -> Sig -> Sig where
@@ -29,3 +30,7 @@ instance f :<: g => f :<: (h :+: g) where
   inj = R . inj
 
 deriving instance (Show (sigl n b p r q), Show (sigr n b p r q)) => Show ((sigl :+: sigr) n b p r q)
+
+instance (Interpretable (sigl n b p r q), Interpretable (sigr n b p r q)) => Interpretable ((sigl :+: sigr) n b p r q) where
+  interp (L l) = interp l
+  interp (R r) = interp r

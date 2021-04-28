@@ -13,6 +13,7 @@ module CTree.Tps where
 
 import Control.Monad
 
+import Interpreter (Interpretable, interp, letin, Dom(Fun))
 import Val
 import Types (Var,Sig)
 
@@ -46,6 +47,29 @@ liftF :: sig n 'False p r q -> Vec n (Tps sig Val) -> Tps sig a
 liftF op ps = Node op ps None
 
 deriving instance (Show a, forall n b p r q. Show (sig n b p r q)) => Show (Tps sig a)
+
+instance (Interpretable a, forall n b p r q. Interpretable (sig n b p r q)) =>
+  Interpretable (Tps sig a) where
+  interp (Leaf a) = interp a
+
+  interp (Node cmd Nil None) = interp cmd
+  interp (Node cmd Nil (Some ("",k))) = do
+    interp cmd
+    interp k
+  interp (Node cmd Nil (Some (x,k))) = do
+    cmd' <- interp cmd
+    letin x cmd' (interp k)
+
+  interp (Node cmd ks (Some ("",k))) = do -- hack to make fixes work
+    Fun f <- interp cmd
+    let ks' = mapV (\ k -> Fun $ \ [] -> interp k) ks -- hacky thunks
+    let k' = Fun $ \ [] -> interp k
+    f (k':toList ks')
+  -- what to do here?
+  -- interp (Node cmd ks None) = do
+  --   Fun f <- interp cmd
+  --   ks' <- mapM interp ks
+  --   f $ toList ks'
 
 -- Helper Function
 

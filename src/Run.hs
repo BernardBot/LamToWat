@@ -4,6 +4,8 @@ import Development.Shake
 
 import Types
 
+import Interpreter
+
 import Lam
 import Wat
 
