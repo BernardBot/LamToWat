@@ -3,6 +3,9 @@
 
 module Wat where
 
+import Text.PrettyPrint.HughesPJ
+import Prelude hiding ((<>))
+
 import Data.List
 
 import Control.Monad
@@ -10,7 +13,7 @@ import Control.Monad
 import Data.Tree
 
 import Val
-import Interpreter
+import Interpreter hiding (int)
 import Types
 
 type Wat = Fix Exp
@@ -24,14 +27,6 @@ data Exp
   | App Val [Val]
   | Val Val
   deriving (Eq,Show)
-
-instance Treeable Exp where
-  toTree (Malloc i x e) = Node (x ++ " = Malloc " ++ show i) [toTree e]
-  toTree (Store i s t e) = Node ("Store " ++ show i ++ " (" ++ show s ++ ") (" ++ show t ++ ")") [toTree e]
-  toTree (Load i v x e) = Node (x ++ " = Load " ++ show i ++ " (" ++ show v ++ ") ") [toTree e]
-  toTree (Add v1 v2 x e) = Node (x ++ " = Add (" ++ show v1 ++ ") (" ++ show v2 ++ ")") [toTree e]
-  toTree (App v vs) = Node ("App (" ++ show v ++ ") " ++ show vs) []
-  toTree (Val v) = toTree v
 
 instance {-# OVERLAPS #-} Interpretable Wat where
   interp (fs,e) = do
@@ -67,73 +62,125 @@ instance Interpretable Exp where
     f ds
   interp (Val v) = interp v
 
+instance Treeable Exp where
+  toTree (Malloc i x e) =
+    Node (x ++ " = Malloc " ++ show i) [toTree e]
+  toTree (Store i s t e) =
+    Node ("Store " ++ show i ++ " (" ++ show s ++ ") (" ++ show t ++ ")") [toTree e]
+  toTree (Load i v x e) =
+    Node (x ++ " = Load " ++ show i ++ " (" ++ show v ++ ") ") [toTree e]
+  toTree (Add v1 v2 x e) =
+    Node (x ++ " = Add (" ++ show v1 ++ ") (" ++ show v2 ++ ")") [toTree e]
+  toTree (App v vs) = Node ("App (" ++ show v ++ ") " ++ show vs) []
+  toTree (Val v) = toTree v
+
+emit :: Wat -> String
+emit = render . pretty
+
 emitRun :: Wat -> IO ()
 emitRun wat = do
   writeFile "temp.wat" $ emit wat
   wat2wasm "temp.wat" "temp.wasm"
   wasminterp "temp.wasm"
 
-instance Emitable Wat where
-  emit (fs,e) =
-    "(module\n" ++
-    "(memory 1)\n" ++
-    "(global $" ++ _p ++ " (mut i32) (i32.const 0))\n" ++
-    "(table " ++ show (length fs) ++ " funcref)\n" ++
-    "(elem (i32.const 0)" ++ concatMap (\ name -> " $" ++ name) names ++ ")\n" ++
-    types ++
-    "(export \"" ++ _start ++ "\" (func $" ++ _start ++ "))\n" ++
-    funcs ++ ")"
-    where names = map (\ (f,_,_) -> f) fs
-          funcs = concatMap emit ((_start,[],e):fs)
-          lengths = sort (nub (2 : (map (\ (_,as,_) -> length as) fs)))
-          types = concatMap typedef lengths
+_p = text "_p"
+_t = text "_t"
+_start = text "_start"
 
-          typedef :: Int -> String
-          typedef len = "(type $" ++ _t ++ show len ++
-            " (func " ++ spaced (replicate len "(param i32)") ++ " (result i32)))\n"
-          
-instance Emitable (Fun Exp) where
-  emit (f,as,b) =
-    "(func $" ++ f ++ " " ++ params as ++
-    " (result i32) " ++ locals ls ++ "\n" ++ indent (emit b) ++ ")\n"
-    where param p = "(param $" ++ p ++ " i32)"
-          local l = "(local $" ++ l ++ " i32)"
-          params = spaced . map param
-          locals = spaced . map local
-          ls = nub (lv b) \\ as
-          
-          lv (Add _ _ x e)  = x : lv e
-          lv (Malloc _ x e) = x : lv e
-          lv (Load _ _ x e) = x : lv e
-          lv (Store _ _ _ e) = lv e
-          lv e = []
-
-instance Emitable Exp where
-  emit (Val v)        = emitV v
-  emit (App v vs)      = "(call_indirect (type $" ++ _t ++ show (length vs) ++ ") " ++ sp vs ++ " " ++ emitV v ++ ")"
-  emit (Add v1 v2 x e) = "(local.set $" ++ x ++ " (i32.add " ++ emitV v1 ++ " " ++ emitV v2 ++"))\n" ++ emit e
-  emit (Load i v x e)  = "(local.set $" ++ x ++ " (i32.load offset=" ++ show (intSize * i) ++ " " ++ emitV v ++ "))\n" ++ emit e
-  emit (Store i s t e) = "(i32.store offset=" ++ show (intSize * i) ++ " " ++ emitV s ++ " " ++ emitV t ++ ")\n" ++ emit e
-  emit (Malloc i x e)  =
-    "(local.set $" ++ x ++ " (global.get $" ++ _p ++ "))\n" ++
-    "(global.set $" ++ _p ++ " (i32.add (global.get $" ++ _p ++ ") (i32.const " ++ show (intSize * i) ++ ")))\n" ++
-    emit e
-
-emitV :: Val -> String
-emitV (VAR x) = "(local.get $" ++ x ++ ")"
-emitV (INT i) = "(i32.const " ++ show i ++ ")"
-emitV (LABEL x) = error $ "encountered LABEL value in Wat expression: " ++ show x
-
-_p,_t,_start :: String
-_p = "_p"
-_t = "_t"
-_start = "_start"
+dollar = text "$"
+module_ = text "module"
+memory = text "memory"
+mut = text "mut"
+i32const = text "i32.const"
+global = text "global"
+i32 = text "i32"
+table = text "table"
+funcref = text "funcref"
+elem_ = text "elem"
+type_ = text "type"
+func_ = text "func"
+param = text "param"
+export = text "export"
+result = text "result"
+call_indirect = text "call_indirect"
+localset = text "local.set"
+localget = text "local.get"
+i32add = text "i32.add"
+i32load = text "i32.load"
+i32store = text "i32.store"
+offset = text "offset"
+globalget = text "global.get"
+globalset = text "global.set"
+local = text "local"
 
 intSize :: Int
 intSize = 4
 
-spaced :: [String] -> String
-spaced = intercalate " "
+pretty :: Wat -> Doc
+pretty (fs,e) = parens (module_ $+$
+  parens (memory <+> int 1) $+$
 
-sp :: [Val] -> String
-sp = spaced . map emitV
+  parens (global <+> dollar <> _p <+>
+          parens (mut <+> i32) <+> parens (i32const <+> int 0)) $+$
+
+  parens (table <+> int (length fs) <+> funcref) $+$
+
+  parens (elem_ <+> parens (i32const <+> int 0) <+>
+          sep (map (\ (f,_,_) -> dollar <> text f) fs)) $+$
+
+  vcat (map (\ (_,as,_) -> let l = length as in
+               parens (type_ <+> dollar <> _t <> int l <+>
+               parens (func_ <+> sep (replicate l (parens (param <+> i32))) <+>
+                      parens (result <+> i32)))) fs) $+$
+
+  parens (export <+> doubleQuotes _start <+> parens (func_ <+> dollar <> _start)) $+$
+
+  vcat (map prettyFun ((render _start,[],e):fs)))
+
+prettyFun :: Fun Exp -> Doc
+prettyFun (f,as,b) = parens (func_ <+>
+          dollar <> text f <+>
+
+          sep (map (\ a -> parens (param <+> dollar <> text a <+> i32)) as) <+>
+
+          parens (result <+> i32) <+>
+
+          sep (map (\ l -> parens (local <+> dollar <> text l <+> i32))
+               (nub (locals b) \\ as)) $+$
+
+          nest 2 (prettyExp b))
+  where locals (Add _ _ x e)  = x : locals e
+        locals (Malloc _ x e) = x : locals e
+        locals (Load _ _ x e) = x : locals e
+        locals (Store _ _ _ e) = locals e
+        locals e = []
+
+prettyExp :: Exp -> Doc
+prettyExp (Val v) = prettyVal v
+prettyExp (App v vs) =
+  parens (call_indirect <+>
+          parens (type_ <+> dollar <> _t <> int (length vs)) <+>
+          sep (map prettyVal vs) <+> prettyVal v)
+prettyExp (Add v1 v2 x e) =
+  parens (localset <+> dollar <> text x <+>
+         parens (i32add <+> prettyVal v1 <+> prettyVal v2)) $+$
+  prettyExp e
+prettyExp (Load i v x e) =
+  parens (localset <+> dollar <> text x <+>
+         parens (i32load <+> offset <> equals <> int (intSize * i) <+> prettyVal v)) $+$
+  prettyExp e
+prettyExp (Store i s t e) =
+  parens (i32store <+> offset <> equals <> int (intSize * i) <+>
+         prettyVal s <+> prettyVal t) $+$
+  prettyExp e
+prettyExp (Malloc i x e) =
+  parens (localset <+> dollar <> text x <+> parens (globalget <+> dollar <> _p)) $+$
+  parens (globalset <+> dollar <> _p <+>
+          parens (i32add <+> parens (globalget <+> dollar <> _p)) <+>
+          parens (i32const <+> int (intSize * i))) $+$
+  prettyExp e
+  
+prettyVal :: Val -> Doc
+prettyVal (VAR x) = parens (localget <+> dollar <> text x)
+prettyVal (INT i) = parens (i32const <+> int i)
+prettyVal (LABEL x) = error $ "encountered LABEL value in Wat expression: " ++ show x

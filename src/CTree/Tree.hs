@@ -9,8 +9,6 @@
 
 module CTree.Tree where
 
-import Types (indent)
-
 import Data.Void
 import Data.List
 import qualified Data.Tree as D
@@ -19,7 +17,7 @@ import Control.Monad
 import Control.Monad.State
 
 import Val
-import Types (Var,Sig,Treeable,toTree)
+import Types (Var,Sig)
 import qualified Types
 import CTree.Vec
 import CTree.Option
@@ -84,6 +82,9 @@ fresh v = liftT (inj (Fresh v)) Nil
 
 type LamCmd = Comp :+: Fix :+: Base
 
+indent :: String -> String
+indent = unlines . map ("  "++) . lines
+
 instance Show a => Show (Tree LamCmd a) where
   show = Types.runFresh . go
     where go :: Show a => Tree LamCmd a -> State Integer String
@@ -114,31 +115,33 @@ instance Show a => Show (Tree LamCmd a) where
             k' <- go (k (f x))
             return $ "Node (" ++ show cmd ++ ") (\\ " ++ x ++ " ->\n" ++ k' ++ ")"
 
-instance Show a => Treeable (Tree LamCmd a) where
-  toTree = Types.runFresh . go
-    where go :: Show a => Tree LamCmd a -> State Integer (D.Tree String)
-          go (Leaf v) = return $ D.Node (show v) []
-          go (Node cmd@(R (R (App _ _))) Nil None) =
-            return $ D.Node (show cmd) []
-          go (Node cmd@(R (L (Fix _)))   ks (Some k)) = do
-            ks' <- mapM (go . ($())) ks
-            k' <- go (k ())
-            return $ D.Node (show cmd) [D.Node "ks" (toList ks'), k']
-          go (Node cmd@(L Block) (k0 ::: Nil) (Some k)) = do
-            x <- Types.fresh "x"
-            k0' <- go (k0 ())
-            k' <- go (k (VAR x))
-            return $ D.Node (show cmd) [D.Node "k0" [k0'],k']
-          go (Node cmd@(L (Fresh y)) Nil (Some k)) = do
-            x <- Types.fresh y
-            k' <- go (k x)
-            return $ D.Node (x ++ " = " ++ show cmd) [k']
 
-          go (Node cmd@(R (R (Add _ _))) Nil (Some k)) = showSimple cmd k VAR
-          go (Node cmd@(L (GetK _))      Nil (Some k)) = showSimple cmd k VAR
-          go (Node cmd@(L (SetK _ _))    Nil (Some k)) = showSimple cmd k (const ())
+toTree :: Show a => Tree LamCmd a -> D.Tree String
+toTree = Types.runFresh . go
+  where go :: Show a => Tree LamCmd a -> State Integer (D.Tree String)
+        go (Leaf v) = return $ D.Node (show v) []
+        go (Node cmd@(R (R (App _ _))) Nil None) =
+          return $ D.Node (show cmd) []
+        go (Node cmd@(R (L (Fix _)))   ks (Some k)) = do
+          ks' <- mapM (go . ($())) ks
+          k' <- go (k ())
+          return $ D.Node (show cmd) [D.Node "ks" (toList ks'), k']
+        go (Node cmd@(L Block) (k0 ::: Nil) (Some k)) = do
+          x <- Types.fresh "x"
+          k0' <- go (k0 ())
+          k' <- go (k (VAR x))
+          return $ D.Node (show cmd) [D.Node "k0" [k0'],k']
+        go (Node cmd@(L (Fresh y)) Nil (Some k)) = do
+          x <- Types.fresh y
+          k' <- go (k x)
+          return $ D.Node (x ++ " = " ++ show cmd) [k']
 
-          showSimple cmd k f = do
-            x <- Types.fresh "x"
-            k' <- go (k (f x))
-            return $ D.Node (x ++ " = " ++ show cmd)  [k']
+        go (Node cmd@(R (R (Add _ _))) Nil (Some k)) = showSimple cmd k VAR
+        go (Node cmd@(L (GetK _))      Nil (Some k)) = showSimple cmd k VAR
+        go (Node cmd@(L (SetK _ _))    Nil (Some k)) = showSimple cmd k (const ())
+
+        showSimple cmd k f = do
+          x <- Types.fresh "x"
+          k' <- go (k (f x))
+          return $ D.Node (x ++ " = " ++ show cmd)  [k']
+
