@@ -13,7 +13,7 @@ import Control.Monad
 import Data.Tree
 
 import Val
-import Interpreter hiding (int)
+import Interpreter hiding (int,func)
 import Types
 
 type Wat = Fix Exp
@@ -80,7 +80,7 @@ instance Treeable Exp where
   toTree (Val v) = toTree v
 
 emit :: Wat -> String
-emit = render . pretty
+emit = render . pWat
 
 emitRun :: Wat -> IO ()
 emitRun wat = do
@@ -88,107 +88,94 @@ emitRun wat = do
   wat2wasm "temp.wat" "temp.wasm"
   wasminterp "temp.wasm"
 
+var x = dollar <> text x
+sexp fun args = parens (text fun <+> args)
+
 _p = text "_p"
 _t = text "_t"
 _start = text "_start"
-
 dollar = text "$"
-module_ = text "module"
-memory = text "memory"
-mut = text "mut"
-i32const = text "i32.const"
-global = text "global"
-i32 = text "i32"
-table = text "table"
 funcref = text "funcref"
-elem_ = text "elem"
-type_ = text "type"
-func_ = text "func"
-param = text "param"
-export = text "export"
-result = text "result"
-call_indirect = text "call_indirect"
-localset = text "local.set"
-localget = text "local.get"
-i32add = text "i32.add"
-i32load = text "i32.load"
-i32store = text "i32.store"
+i32 = text "i32"
 offset = text "offset"
-globalget = text "global.get"
-globalset = text "global.set"
-local = text "local"
+func_ = text "func"
+
+func = sexp "func"
+module_ defs = parens (text "module" $+$ defs)
+memory = sexp "memory"
+mut = sexp "mut"
+globaldef var m val = sexp "global" (var <+> m <+> val)
+table size typ = sexp "table" (size <+> typ)
+elem_ off names = sexp "elem" (off <+> hsep names)
+typedef name params res = typ (name <+> func (hsep (map param params) <+> result res))
+typ = sexp "type"
+export exportName name =
+  sexp "export" (doubleQuotes name <+> func name)
+call_indirect typ fun args = sexp "call_indirect" (typ <+> hsep args <+> fun)
+i32const = sexp "i32.const"
+i32add x y = sexp "i32.add" (x <+> y)
+i32load i x = sexp "i32.load" (offset <> equals <> i <+> x)
+i32store i s t = sexp "i32.store" (offset <> equals <> i <+> s <+> t)
+globalset a b = sexp "global.set" (a <+> b)
+globalget = sexp "global.get"
+localset a b = sexp "local.set" (a <+> b)
+localget = sexp "local.get"
+param = sexp "param"
+local = sexp "local"
+result = sexp "result"
 
 intSize :: Int
 intSize = 4
 
-pretty :: Wat -> Doc
-pretty (fs,e) = parens (module_ $+$
-  parens (memory <+> int 1) $+$
-
-  parens (global <+> dollar <> _p <+>
-          parens (mut <+> i32) <+> parens (i32const <+> int 0)) $+$
-
-  parens (table <+> int (length fs) <+> funcref) $+$
-
-  parens (elem_ <+> parens (i32const <+> int 0) <+>
-          hsep (map (\ f -> dollar <> text f) names)) $+$
-
-  vcat (map (\ l ->
-               parens (type_ <+> dollar <> _t <> int l <+>
-               parens (func_ <+> hsep (replicate l (parens (param <+> i32))) <+>
-                      parens (result <+> i32)))) lengths) $+$
-
-  parens (export <+> doubleQuotes _start <+> parens (func_ <+> dollar <> _start)) $+$
-
-  vcat (map prettyFun ((render _start,[],e):fs)))
-
-  where names = map (\ (f,_,_) -> f) fs
+pWat :: Wat -> Doc
+pWat (fs,e) = module_ (
+  memory (int 1) $+$
+  globaldef (dollar <> _p) (mut i32) (i32const (int 0)) $+$
+  table (int (length fs)) funcref $+$
+  elem_ (i32const (int 0)) names $+$
+  vcat (map (\ l -> typedef
+              (dollar <> _t <> int l) (replicate l i32) i32) lengths) $+$
+  export _start (dollar <> _start) $+$
+  vcat (map pFun ((render _start,[],e):fs)))
+  where names = map (\ (f,_,_) -> var f) fs
         lengths = sort (nub (2 : map (\ (_,as,_) -> length as) fs))
 
-prettyFun :: Fun Exp -> Doc
-prettyFun (f,as,b) = parens (func_ <+>
-          dollar <> text f <+>
-
-          hsep (map (\ a -> parens (param <+> dollar <> text a <+> i32)) as) <+>
-
-          parens (result <+> i32) <+>
-
-          hsep (map (\ l -> parens (local <+> dollar <> text l <+> i32))
-               (nub (locals b) \\ as)) $+$
-
-          nest 2 (prettyExp b))
+pFun :: Fun Exp -> Doc
+pFun (name,as,body) = parens (
+  func_ <+>
+  var name <+>
+  hsep (map (\ x -> param (var x <+> i32)) as) <+>
+  result i32 <+>
+  hsep (map (\ x -> local (var x <+> i32)) (nub (locals body) \\ as)) $+$
+  nest 2 (pExp body))
   where locals (Add _ _ x e)  = x : locals e
         locals (Malloc _ x e) = x : locals e
         locals (Load _ _ x e) = x : locals e
         locals (Store _ _ _ e) = locals e
         locals e = []
 
-prettyExp :: Exp -> Doc
-prettyExp (Val v) = prettyVal v
-prettyExp (App v vs) =
-  parens (call_indirect <+>
-          parens (type_ <+> dollar <> _t <> int (length vs)) <+>
-          hsep (map prettyVal vs) <+> prettyVal v)
-prettyExp (Add v1 v2 x e) =
-  parens (localset <+> dollar <> text x <+>
-         parens (i32add <+> prettyVal v1 <+> prettyVal v2)) $+$
-  prettyExp e
-prettyExp (Load i v x e) =
-  parens (localset <+> dollar <> text x <+>
-         parens (i32load <+> offset <> equals <> int (intSize * i) <+> prettyVal v)) $+$
-  prettyExp e
-prettyExp (Store i s t e) =
-  parens (i32store <+> offset <> equals <> int (intSize * i) <+>
-         prettyVal s <+> prettyVal t) $+$
-  prettyExp e
-prettyExp (Malloc i x e) =
-  parens (localset <+> dollar <> text x <+> parens (globalget <+> dollar <> _p)) $+$
-  parens (globalset <+> dollar <> _p <+>
-          parens (i32add <+> parens (globalget <+> dollar <> _p) <+>
-                             parens (i32const <+> int (intSize * i)))) $+$
-  prettyExp e
-  
-prettyVal :: Val -> Doc
-prettyVal (VAR x) = parens (localget <+> dollar <> text x)
-prettyVal (INT i) = parens (i32const <+> int i)
-prettyVal (LABEL x) = error $ "encountered LABEL value in Wat expression: " ++ show x
+pExp :: Exp -> Doc
+pExp (Val v) = pVal v
+pExp (App v vs) = call_indirect
+  (typ (dollar <> _t <> int (length vs)))
+  (pVal v)
+  (map pVal vs)
+pExp (Add v1 v2 x e) =
+  localset (var x) (i32add (pVal v1) (pVal v2)) $+$
+  pExp e
+pExp (Load i v x e) =
+  localset (var x) (i32load (int (intSize * i)) (pVal v)) $+$
+  pExp e
+pExp (Store i s t e) =
+  i32store (int (intSize * i)) (pVal s) (pVal t) $+$
+  pExp e
+pExp (Malloc i x e) =
+  localset (var x) (globalget (dollar <> _p)) $+$
+  globalset (dollar <> _p)
+    (i32add (globalget (dollar <> _p)) (i32const (int (intSize * i)))) $+$
+  pExp e
+
+pVal :: Val -> Doc
+pVal (VAR x) = localget (var x)
+pVal (INT i) = i32const (int i)
+pVal (LABEL x) = error $ "encountered LABEL value in Wat expression: " ++ show x
