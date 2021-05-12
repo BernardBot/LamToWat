@@ -3,7 +3,6 @@ module Run where
 import Text.PrettyPrint.HughesPJ
 import Development.Shake
 import Data.Tree.Pretty
-import Text.Show.Pretty
 
 import Types
 
