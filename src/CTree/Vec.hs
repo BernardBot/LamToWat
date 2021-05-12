@@ -35,3 +35,4 @@ toList (x ::: xs) = x : toList xs
 zipWithV :: (a -> b -> c) -> Vec n a -> Vec n b -> Vec n c
 zipWithV _ Nil Nil = Nil
 zipWithV f (a:::as) (b:::bs) = f a b ::: zipWithV f as bs
+

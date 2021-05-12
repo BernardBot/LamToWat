@@ -17,10 +17,7 @@ import Control.Monad
 
 import Interpreter (Interpretable, interp, letin, Dom(Fun))
 import Val
-import Types (Var,Sig)
-
-import qualified Types
-import qualified Interpreter
+import Types (Var,Sig,Treeable,toTree)
 
 import CTree.Option
 import CTree.Vec
@@ -51,20 +48,16 @@ liftT op ps x k = Node op ps (Some (x, k))
 liftF :: sig n 'False p r q -> Vec n (Tps sig Val) -> Tps sig a
 liftF op ps = Node op ps None
 
-toTree :: (Show a, forall n b p r q. Show (sig n b p r q)) =>
-       Tps sig a -> D.Tree String
-toTree (Leaf a) = D.Node (show a) []
-toTree (Node cmd Nil None) = D.Node (show cmd) []
-toTree (Node cmd Nil (Some ("",k))) = D.Node (show cmd) [toTree k]
-toTree (Node cmd Nil (Some (x,k))) = D.Node (x ++ " = " ++ show cmd) [toTree k]
-toTree (Node cmd ks (Some ("",k))) =
-  D.Node (show cmd) [D.Node "ks" (map toTree (toList ks)), toTree k]
-
 deriving instance (Show a, forall n b p r q. Show (sig n b p r q)) => Show (Tps sig a)
 
-instance (Interpretable (Tps sig a)) => Interpretable (Types.Fix (Tps sig a)) where
-  interp (fs,e) = Interpreter.fix (map (fmap interp) fs,interp e)
-
+instance (Treeable a, forall n b p r q. Show (sig n b p r q)) =>
+  Treeable (Tps sig a) where
+  toTree (Leaf a) = toTree a
+  toTree (Node cmd Nil None) = D.Node (show cmd) []
+  toTree (Node cmd Nil (Some ("",k))) = D.Node (show cmd) [toTree k]
+  toTree (Node cmd Nil (Some (x,k))) = D.Node (x ++ " = " ++ show cmd) [toTree k]
+  toTree (Node cmd ks (Some ("",k))) = D.Node (show cmd) [D.Node "ks" (map toTree (toList ks)), toTree k]
+  
 
 instance (Interpretable a, forall n b p r q. Interpretable (sig n b p r q)) =>
   Interpretable (Tps sig a) where
