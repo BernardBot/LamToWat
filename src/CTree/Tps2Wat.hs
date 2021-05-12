@@ -38,6 +38,3 @@ tps2wat (fs,e) = (map (fmap t2w) fs,t2w e)
 
         v2v (LABEL x) = INT $ fromJust $ x `elemIndex` ns
         v2v v         = v
-
-instance Emitable WatTps where
-  emit = emit . tps2wat

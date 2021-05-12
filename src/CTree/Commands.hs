@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -7,6 +8,8 @@
 {-# LANGUAGE GADTs #-}
 
 module CTree.Commands where
+
+import Data.Data
 
 import Control.Monad.Reader (ask,local)
 import Data.Void

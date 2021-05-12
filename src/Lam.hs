@@ -1,6 +1,8 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Lam where
 
-import Data.Tree
+import Data.Data hiding (Infix)
 
 import Text.Parsec
 import Text.Parsec.Token
@@ -16,7 +18,7 @@ data Lam
   | App Lam Lam
   | Add Lam Lam
   | Val Val
-  deriving (Eq,Show)
+  deriving (Eq,Show,Data)
 
 instance Interpretable Lam where
   interp (Val v) = interp v
@@ -30,23 +32,6 @@ instance Interpretable Lam where
     Int j <- interp e2
     int $ i + j
 
-instance Emitable Lam where
-  emit (Val v) = emit v
-  emit (App e1 e2) = emit e1 ++ "(" ++ emit e2 ++ ")"
-  emit (Lam x e) = "(lambda " ++ x ++ ": " ++ emit e ++ ")"
-  emit (Add e1 e2) = emit e1 ++ " + " ++ emit e2
-
-emitRun :: Lam -> IO ()
-emitRun lam = do
-  writeFile "lam_temp.py" $ "print(" ++ emit lam ++ ")"
-  python3 "lam_temp.py"
-
-instance Treeable Lam where
-  toTree (Lam x e) = Node ("Lam " ++ show x) [toTree e]
-  toTree (App e1 e2) = Node "App" [toTree e1, toTree e2]
-  toTree (Add e1 e2) = Node "Add" [toTree e1, toTree e2]
-  toTree (Val v) = toTree v
-
 ------------
 -- Parser --
 ------------
@@ -59,12 +44,16 @@ str2lam str = case parseLam str of
 parseLam :: String -> Either ParseError Lam
 parseLam = parse (between whiteSpace eof expr) ""
   where expr = buildExpressionParser
+
           [ [binary ""  App AssocLeft]
-          , [binary "+" Add AssocLeft]] $
+          , [binary "+" Add AssocLeft]
+          ] $
+
           choice [ try val
                  , try lam
                  , try letin
-                 , parens expr]
+                 , parens expr
+                 ]
 
         binary op f = Infix $ reservedOp op >> return f
 

@@ -10,9 +10,6 @@ import Types
 class Interpretable a where
   interp :: a -> IDom
 
-instance {-# OVERLAPPABLE #-} Interpretable a => Interpretable (Fix a) where
-  interp (fs,e) = fix (map (fmap interp) fs,interp e)
-
 -- Environment
 type Env = [(Var,Dom)]
 -- Heap
