@@ -33,7 +33,7 @@ compile file outFile = do
   fileContents <- readFile file
   case parseLam fileContents of
     Left err -> print err
-    Right exp -> writeFile outFile $ render $ emit $ lam2wat' exp
+    Right exp -> writeFile outFile $ emit $ lam2wat' exp
 
 lam2wat :: Lam -> Wat
 lam2wat = cps2wat . cps2cps. lam2cps
