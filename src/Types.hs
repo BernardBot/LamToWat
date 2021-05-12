@@ -4,12 +4,8 @@ import Development.Shake
 
 import Data.Tree
 import Data.Tree.Pretty
-import Data.List
 
-import Control.Monad.Identity
 import Control.Monad.State
-
-import Text.Parsec
 
 -----------------
 -- Definitions --

@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Cont.Cps2Cps where
 
 import Control.Monad.Writer

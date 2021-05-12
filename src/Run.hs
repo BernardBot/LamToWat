@@ -23,6 +23,8 @@ import CTree.Tree2Tps
 import CTree.Tps2Tps
 import CTree.Tps2Wat
 
+parse = str2lam
+
 compile :: FilePath -> FilePath -> IO ()
 compile file outFile = do
   fileContents <- readFile file

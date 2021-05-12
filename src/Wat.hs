@@ -28,7 +28,7 @@ data Exp
   | Val Val
   deriving (Eq,Show)
 
-instance {-# OVERLAPS #-} Interpretable Wat where
+instance Interpretable Wat where
   interp (fs,e) = do
     malloc (length fs)
     zipWithM_
