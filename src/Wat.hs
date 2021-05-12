@@ -62,14 +62,11 @@ instance Interpretable Exp where
     f ds
   interp (Val v) = interp v
 
-emit :: Wat -> String
-emit = render . pretty
-
-emitRun :: Wat -> IO ()
-emitRun wat = do
-  writeFile "temp.wat" $ emit wat
-  wat2wasm "temp.wat" "temp.wasm"
-  wasminterp "temp.wasm"
+-- emitRun :: Wat -> IO ()
+-- emitRun wat = do
+--   writeFile "temp.wat" $ emit wat
+--   wat2wasm "temp.wat" "temp.wasm"
+--   wasminterp "temp.wasm"
 
 _p = text "_p"
 _t = text "_t"
@@ -104,8 +101,8 @@ local = text "local"
 intSize :: Int
 intSize = 4
 
-pretty :: Wat -> Doc
-pretty (fs,e) = parens (module_ $+$
+emit :: Wat -> Doc
+emit (fs,e) = parens (module_ $+$
   parens (memory <+> int 1) $+$
 
   parens (global <+> dollar <> _p <+>
@@ -123,10 +120,10 @@ pretty (fs,e) = parens (module_ $+$
 
   parens (export <+> doubleQuotes _start <+> parens (func_ <+> dollar <> _start)) $+$
 
-  vcat (map prettyFun ((render _start,[],e):fs)))
+  vcat (map emitFun ((render _start,[],e):fs)))
 
-prettyFun :: Fun Exp -> Doc
-prettyFun (f,as,b) = parens (func_ <+>
+emitFun :: Fun Exp -> Doc
+emitFun (f,as,b) = parens (func_ <+>
           dollar <> text f <+>
 
           sep (map (\ a -> parens (param <+> dollar <> text a <+> i32)) as) <+>
@@ -136,39 +133,39 @@ prettyFun (f,as,b) = parens (func_ <+>
           sep (map (\ l -> parens (local <+> dollar <> text l <+> i32))
                (nub (locals b) \\ as)) $+$
 
-          nest 2 (prettyExp b))
+          nest 2 (emitExp b))
   where locals (Add _ _ x e)  = x : locals e
         locals (Malloc _ x e) = x : locals e
         locals (Load _ _ x e) = x : locals e
         locals (Store _ _ _ e) = locals e
         locals e = []
 
-prettyExp :: Exp -> Doc
-prettyExp (Val v) = prettyVal v
-prettyExp (App v vs) =
+emitExp :: Exp -> Doc
+emitExp (Val v) = emitVal v
+emitExp (App v vs) =
   parens (call_indirect <+>
           parens (type_ <+> dollar <> _t <> int (length vs)) <+>
-          sep (map prettyVal vs) <+> prettyVal v)
-prettyExp (Add v1 v2 x e) =
+          sep (map emitVal vs) <+> emitVal v)
+emitExp (Add v1 v2 x e) =
   parens (localset <+> dollar <> text x <+>
-         parens (i32add <+> prettyVal v1 <+> prettyVal v2)) $+$
-  prettyExp e
-prettyExp (Load i v x e) =
+         parens (i32add <+> emitVal v1 <+> emitVal v2)) $+$
+  emitExp e
+emitExp (Load i v x e) =
   parens (localset <+> dollar <> text x <+>
-         parens (i32load <+> offset <> equals <> int (intSize * i) <+> prettyVal v)) $+$
-  prettyExp e
-prettyExp (Store i s t e) =
+         parens (i32load <+> offset <> equals <> int (intSize * i) <+> emitVal v)) $+$
+  emitExp e
+emitExp (Store i s t e) =
   parens (i32store <+> offset <> equals <> int (intSize * i) <+>
-         prettyVal s <+> prettyVal t) $+$
-  prettyExp e
-prettyExp (Malloc i x e) =
+         emitVal s <+> emitVal t) $+$
+  emitExp e
+emitExp (Malloc i x e) =
   parens (localset <+> dollar <> text x <+> parens (globalget <+> dollar <> _p)) $+$
   parens (globalset <+> dollar <> _p <+>
           parens (i32add <+> parens (globalget <+> dollar <> _p)) <+>
           parens (i32const <+> int (intSize * i))) $+$
-  prettyExp e
+  emitExp e
   
-prettyVal :: Val -> Doc
-prettyVal (VAR x) = parens (localget <+> dollar <> text x)
-prettyVal (INT i) = parens (i32const <+> int i)
-prettyVal (LABEL x) = error $ "encountered LABEL value in Wat expression: " ++ show x
+emitVal :: Val -> Doc
+emitVal (VAR x) = parens (localget <+> dollar <> text x)
+emitVal (INT i) = parens (i32const <+> int i)
+emitVal (LABEL x) = error $ "encountered LABEL value in Wat expression: " ++ show x
