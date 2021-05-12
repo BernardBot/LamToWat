@@ -30,7 +30,6 @@ instance Interpretable Lam where
     Int j <- interp e2
     int $ i + j
 
-
 instance Treeable Lam where
   toTree (Lam x e) = Node ("Lam " ++ show x) [toTree e]
   toTree (App e1 e2) = Node "App" [toTree e1, toTree e2]

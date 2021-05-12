@@ -1,5 +1,6 @@
 module Run where
 
+import Text.Show.Pretty
 import Development.Shake
 
 import Types

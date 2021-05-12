@@ -62,6 +62,11 @@ instance Interpretable Exp where
     f ds
   interp (Val v) = interp v
 
+instance Treeable Wat where
+  toTree (fs,e) =  Node "Fix"
+    [Node "fs"
+     (map (\ (f,as,b) -> Node (show f ++ " " ++ show as) [toTree b]) fs), toTree e]
+
 instance Treeable Exp where
   toTree (Malloc i x e) =
     Node (x ++ " = Malloc " ++ show i) [toTree e]
@@ -126,26 +131,29 @@ pretty (fs,e) = parens (module_ $+$
   parens (table <+> int (length fs) <+> funcref) $+$
 
   parens (elem_ <+> parens (i32const <+> int 0) <+>
-          sep (map (\ (f,_,_) -> dollar <> text f) fs)) $+$
+          hsep (map (\ f -> dollar <> text f) names)) $+$
 
-  vcat (map (\ (_,as,_) -> let l = length as in
+  vcat (map (\ l ->
                parens (type_ <+> dollar <> _t <> int l <+>
-               parens (func_ <+> sep (replicate l (parens (param <+> i32))) <+>
-                      parens (result <+> i32)))) fs) $+$
+               parens (func_ <+> hsep (replicate l (parens (param <+> i32))) <+>
+                      parens (result <+> i32)))) lengths) $+$
 
   parens (export <+> doubleQuotes _start <+> parens (func_ <+> dollar <> _start)) $+$
 
   vcat (map prettyFun ((render _start,[],e):fs)))
 
+  where names = map (\ (f,_,_) -> f) fs
+        lengths = sort (nub (2 : map (\ (_,as,_) -> length as) fs))
+
 prettyFun :: Fun Exp -> Doc
 prettyFun (f,as,b) = parens (func_ <+>
           dollar <> text f <+>
 
-          sep (map (\ a -> parens (param <+> dollar <> text a <+> i32)) as) <+>
+          hsep (map (\ a -> parens (param <+> dollar <> text a <+> i32)) as) <+>
 
           parens (result <+> i32) <+>
 
-          sep (map (\ l -> parens (local <+> dollar <> text l <+> i32))
+          hsep (map (\ l -> parens (local <+> dollar <> text l <+> i32))
                (nub (locals b) \\ as)) $+$
 
           nest 2 (prettyExp b))
@@ -160,7 +168,7 @@ prettyExp (Val v) = prettyVal v
 prettyExp (App v vs) =
   parens (call_indirect <+>
           parens (type_ <+> dollar <> _t <> int (length vs)) <+>
-          sep (map prettyVal vs) <+> prettyVal v)
+          hsep (map prettyVal vs) <+> prettyVal v)
 prettyExp (Add v1 v2 x e) =
   parens (localset <+> dollar <> text x <+>
          parens (i32add <+> prettyVal v1 <+> prettyVal v2)) $+$
@@ -176,8 +184,8 @@ prettyExp (Store i s t e) =
 prettyExp (Malloc i x e) =
   parens (localset <+> dollar <> text x <+> parens (globalget <+> dollar <> _p)) $+$
   parens (globalset <+> dollar <> _p <+>
-          parens (i32add <+> parens (globalget <+> dollar <> _p)) <+>
-          parens (i32const <+> int (intSize * i))) $+$
+          parens (i32add <+> parens (globalget <+> dollar <> _p) <+>
+                             parens (i32const <+> int (intSize * i)))) $+$
   prettyExp e
   
 prettyVal :: Val -> Doc

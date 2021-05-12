@@ -36,7 +36,7 @@ instance Interpretable Cps where
   interp (Val v) = interp v
 
 instance Treeable Cps where
-  toTree (Fix fs e) =  Node "Fix"
+  toTree (Fix fs e) = Node "Fix"
     [Node "fs"
      (map (\ (f,as,b) -> Node (show f ++ " " ++ show as) [toTree b]) fs), toTree e]
   toTree (Record vs x e) =
