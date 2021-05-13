@@ -1,5 +1,7 @@
 module Lam where
 
+import Data.Text.Prettyprint.Doc
+
 import Data.Tree
 
 import Text.Parsec

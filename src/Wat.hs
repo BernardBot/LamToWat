@@ -3,7 +3,7 @@
 
 module Wat where
 
-import Text.PrettyPrint.HughesPJ
+import Data.Text.Prettyprint.Doc
 import Prelude hiding ((<>))
 
 import Data.List
@@ -80,7 +80,7 @@ instance Treeable Exp where
   toTree (Val v) = toTree v
 
 emit :: Wat -> String
-emit = render . pWat
+emit = show . pretty
 
 emitRun :: Wat -> IO ()
 emitRun wat = do
@@ -88,94 +88,107 @@ emitRun wat = do
   wat2wasm "temp.wat" "temp.wasm"
   wasminterp "temp.wasm"
 
-var x = dollar <> text x
-sexp fun args = parens (text fun <+> args)
+-- helper for variable
+var x = dollar <> pretty x
+vars xs = map var xs
+asgn x e c = localset (var x) e <> line <> pretty c
 
-_p = text "_p"
-_t = text "_t"
-_start = text "_start"
-dollar = text "$"
-funcref = text "funcref"
-i32 = text "i32"
-offset = text "offset"
-func_ = text "func"
+-- operator types
+unary   op arg1           = parens (pretty op <+> arg1)
+binary  op arg1 arg2      = parens (pretty op <+> arg1 <+> arg2)
+ternary op arg1 arg2 arg3 = parens (pretty op <+> arg1 <+> arg2 <+> arg3)
 
-func = sexp "func"
-module_ defs = parens (text "module" $+$ defs)
-memory = sexp "memory"
-mut = sexp "mut"
-globaldef var m val = sexp "global" (var <+> m <+> val)
-table size typ = sexp "table" (size <+> typ)
-elem_ off names = sexp "elem" (off <+> hsep names)
-typedef name params res = typ (name <+> func (hsep (map param params) <+> result res))
-typ = sexp "type"
-export exportName name =
-  sexp "export" (doubleQuotes name <+> func name)
-call_indirect typ fun args = sexp "call_indirect" (typ <+> hsep args <+> fun)
-i32const = sexp "i32.const"
-i32add x y = sexp "i32.add" (x <+> y)
-i32load i x = sexp "i32.load" (offset <> equals <> i <+> x)
-i32store i s t = sexp "i32.store" (offset <> equals <> i <+> s <+> t)
-globalset a b = sexp "global.set" (a <+> b)
-globalget = sexp "global.get"
-localset a b = sexp "local.set" (a <+> b)
-localget = sexp "local.get"
-param = sexp "param"
-local = sexp "local"
-result = sexp "result"
+-- reserved variable names
+_p = var "_p" -- heap pointer
+_t = var "_t" -- type variable prefix
+
+-- keywords
+_start  = pretty "_start"
+dollar  = pretty "$"
+funcref = pretty "funcref"
+i32     = pretty "i32"
+offset  = pretty "offset"
+func0   = pretty "func"
+
+-- unary operators
+func1     = unary "func"
+type_     = unary "type"
+mut       = unary "mut"
+localget  = unary "local.get"
+param     = unary "param"
+local     = unary "local"
+result    = unary "result"
+globalget = unary "global.get"
+module_ a = parens (pretty "module" <> line <> a)
+export a  = binary "export" (dquotes a) (func1 (dollar <> a))
+
+memory, i32const, table :: Int -> Doc ann
+memory  = unary "memory" . pretty
+i32const = unary "i32.const" . pretty
+table s    = binary "table" (pretty s) funcref
+
+-- binary operators
+globalset  = binary "global.set"
+localset   = binary "local.set"
+i32add     = binary "i32.add"
+elem_      = binary "elem"
+
+i32load :: Int -> Doc ann -> Doc ann
+i32load i  = binary "i32.load" (offset <> equals <> pretty i)
+
+-- ternary operators
+globaldef           = ternary "global"
+typedef       a b c = binary "type" a (func1 (hsep (map param b) <+> result c))
+call_indirect a b c = ternary "call_indirect" a (hsep c) b
+
+i32store :: Int -> Doc ann -> Doc ann -> Doc ann
+i32store i = ternary "i32.store" (offset <> equals <> pretty i)
 
 intSize :: Int
 intSize = 4
 
-pWat :: Wat -> Doc
-pWat (fs,e) = module_ (
-  memory (int 1) $+$
-  globaldef (dollar <> _p) (mut i32) (i32const (int 0)) $+$
-  table (int (length fs)) funcref $+$
-  elem_ (i32const (int 0)) names $+$
-  vcat (map (\ l -> typedef
-              (dollar <> _t <> int l) (replicate l i32) i32) lengths) $+$
-  export _start (dollar <> _start) $+$
-  vcat (map pFun ((render _start,[],e):fs)))
-  where names = map (\ (f,_,_) -> var f) fs
-        lengths = sort (nub (2 : map (\ (_,as,_) -> length as) fs))
+instance {-# OVERLAPS #-} Pretty Wat where
+  pretty (fs,e) = module_ (vsep
+    [ memory 1
+    , globaldef _p (mut i32) (i32const 0)
+    , table (length fs)
+    , elem_ (i32const 0) (hsep (map (var . fst3) fs))
+    , let lens = sort (nub (2 : map (length . snd3) fs)) in
+        vsep (map (\ l ->
+                typedef (_t <> pretty l) (replicate l i32) i32) lens)
+    , export _start
+    , vsep (map pretty ((show _start,[],e):fs))
+    ])
 
-pFun :: Fun Exp -> Doc
-pFun (name,as,body) = parens (
-  func_ <+>
-  var name <+>
-  hsep (map (\ x -> param (var x <+> i32)) as) <+>
-  result i32 <+>
-  hsep (map (\ x -> local (var x <+> i32)) (nub (locals body) \\ as)) $+$
-  nest 2 (pExp body))
-  where locals (Add _ _ x e)  = x : locals e
-        locals (Malloc _ x e) = x : locals e
-        locals (Load _ _ x e) = x : locals e
-        locals (Store _ _ _ e) = locals e
-        locals e = []
+instance {-# OVERLAPS #-} Pretty (Fun Exp) where
+  pretty (f,as,b) = func1 (hsep
+    [ var f
+    , hsep (map (\ x -> param (var x <+> i32)) as)
+    , result i32
+    , hsep (map (\ x -> local (var x <+> i32)) (nub (locals b) \\ as))
+    ] <> line <>
+    nest 2 (pretty b))
+    where locals (Add _ _ x e)  = x : locals e
+          locals (Malloc _ x e) = x : locals e
+          locals (Load _ _ x e) = x : locals e
+          locals (Store _ _ _ e) = locals e
+          locals e = []
 
-pExp :: Exp -> Doc
-pExp (Val v) = pVal v
-pExp (App v vs) = call_indirect
-  (typ (dollar <> _t <> int (length vs)))
-  (pVal v)
-  (map pVal vs)
-pExp (Add v1 v2 x e) =
-  localset (var x) (i32add (pVal v1) (pVal v2)) $+$
-  pExp e
-pExp (Load i v x e) =
-  localset (var x) (i32load (int (intSize * i)) (pVal v)) $+$
-  pExp e
-pExp (Store i s t e) =
-  i32store (int (intSize * i)) (pVal s) (pVal t) $+$
-  pExp e
-pExp (Malloc i x e) =
-  localset (var x) (globalget (dollar <> _p)) $+$
-  globalset (dollar <> _p)
-    (i32add (globalget (dollar <> _p)) (i32const (int (intSize * i)))) $+$
-  pExp e
+instance Pretty Exp where
+  pretty (Val v) = pretty v
+  pretty (App v vs) =
+    call_indirect (type_ (_t <> pretty (length vs))) (pretty v) (map pretty vs)
+  pretty (Add v1 v2 x e) = asgn x (i32add (pretty v1) (pretty v2)) e
+  pretty (Load i v x e) = asgn x (i32load (intSize*i) (pretty v)) e
+  pretty (Store i s t e) =
+   i32store (intSize * i) (pretty s) (pretty t) <> line <> pretty e
+  pretty (Malloc i x e) = hsep
+    [ localset (var x) (globalget _p)
+    , globalset _p (i32add (globalget _p) (i32const (intSize*i)))
+    , pretty e
+    ]
 
-pVal :: Val -> Doc
-pVal (VAR x) = localget (var x)
-pVal (INT i) = i32const (int i)
-pVal (LABEL x) = error $ "encountered LABEL value in Wat expression: " ++ show x
+instance Pretty Val where
+    pretty (INT i) = i32const i
+    pretty (VAR x) = localget (var x)
+    pretty (LABEL x) = error $ "encountered LABEL value in Wat expression: " ++ show x

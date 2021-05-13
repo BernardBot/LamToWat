@@ -18,6 +18,10 @@ type Fix e = ([Fun e],e)
 data Nat = Z | S Nat
 type Sig = Nat -> Bool -> * -> * -> * -> *
 
+fst3 (a,_,_) = a
+snd3 (_,b,_) = b
+thd3 (_,_,c) = c
+
 ----------
 -- Util --
 ----------
@@ -42,8 +46,5 @@ runFresh = fst . flip runState 0
 class Treeable a where
   toTree :: a -> Tree String
 
-  pTree :: a -> String
-  pTree = drawVerticalTree . toTree
-
-  pTreeIO :: a -> IO ()
-  pTreeIO = putStr . pTree
+  pTree :: a -> IO ()
+  pTree = putStr . drawVerticalTree . toTree
