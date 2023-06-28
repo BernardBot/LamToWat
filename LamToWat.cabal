@@ -22,7 +22,6 @@ executable lam2wat
                        CTree.Tps2Tps
                        CTree.Tps2Wat
                        CTree.Tree
-                       CTree.Tree2Tps
                        CTree.Union
                        CTree.Vec
                        CTree.Tree2Tps
@@ -62,7 +61,6 @@ test-suite lam2test
                        CTree.Tps2Tps
                        CTree.Tps2Wat
                        CTree.Tree
-                       CTree.Tree2Tps
                        CTree.Union
                        CTree.Vec
                        CTree.Tree2Tps
